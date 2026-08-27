@@ -88,9 +88,26 @@ const uploadWorkerDocuments = async (req, res) => {
         });
     }
 };
+const getApprovedWorkers = async (req, res) => {
+    try {
+        const workers = await workerService.getApprovedWorkers();
+
+        return res.status(200).json({
+            success: true,
+            message: "Approved workers fetched successfully",
+            data: workers,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 
 module.exports = {
     createOrUpdateWorkerProfile,
     getMyWorkerProfile,
     uploadWorkerDocuments,
+    getApprovedWorkers,
 };

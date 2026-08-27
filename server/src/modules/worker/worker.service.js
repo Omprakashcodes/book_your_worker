@@ -42,6 +42,7 @@ const createOrUpdateWorkerProfile = async (userId, workerData) => {
         }
     );
 
+
     return worker;
 };
 
@@ -77,8 +78,19 @@ const uploadWorkerDocuments = async (userId, files) => {
     return worker;
 };
 
+
+const getApprovedWorkers = async () => {
+    const workers = await Worker.find({
+        verificationStatus: "approved",
+    })
+        .populate("userId", "name email role")
+        .sort({ createdAt: -1 });
+
+    return workers;
+};
 module.exports = {
     createOrUpdateWorkerProfile,
     getMyWorkerProfile,
     uploadWorkerDocuments,
+    getApprovedWorkers,
 };

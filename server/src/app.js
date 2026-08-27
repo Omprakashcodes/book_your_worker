@@ -10,7 +10,7 @@ const authRoutes = require("./modules/auth/auth.routes");
 const userRoutes = require("./modules/user/user.routes");
 const workerRoutes = require("./modules/worker/worker.routes");
 const adminRoutes = require("./modules/admin/admin.routes");
-
+const bookingRoutes = require("./modules/booking/booking.routes");
 const app = express();
 
 // =========================
@@ -68,6 +68,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/workers", workerRoutes);
 
 app.use("/api/admin", adminRoutes);
+
+app.use("/api/bookings", bookingRoutes);
 
 // =========================
 // Health Check

@@ -36,7 +36,67 @@ const getWorkerById = async (req, res) => {
     }
 };
 
+const getAllWorkers = async (req, res) => {
+    try {
+        const workers = await adminService.getAllWorkers();
+
+        return res.status(200).json({
+            success: true,
+            message: "All workers fetched successfully",
+            data: workers,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+const approveWorker = async (req, res) => {
+    try {
+        const worker = await adminService.approveWorker(
+            req.params.id
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Worker approved successfully",
+            data: worker,
+        });
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+const rejectWorker = async (req, res) => {
+    try {
+        const { rejectionReason } = req.body;
+
+        const worker = await adminService.rejectWorker(
+            req.params.id,
+            rejectionReason
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Worker rejected successfully",
+            data: worker,
+        });
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 module.exports = {
     getPendingWorkers,
     getWorkerById,
+    approveWorker,
+    rejectWorker,
+    getAllWorkers,
 };
