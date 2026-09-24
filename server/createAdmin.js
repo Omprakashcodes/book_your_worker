@@ -17,7 +17,14 @@ const createAdmin = async () => {
         const existingAdmin = await Auth.findOne({ email });
 
         if (existingAdmin) {
-            console.log("Admin already exists");
+            existingAdmin.name = "BookMyWorker Admin";
+            existingAdmin.password = await bcrypt.hash(password, 10);
+            existingAdmin.role = "admin";
+            await existingAdmin.save();
+
+            console.log("Admin password reset successfully");
+            console.log("Email:", existingAdmin.email);
+            console.log("Role:", existingAdmin.role);
             process.exit(0);
         }
 
