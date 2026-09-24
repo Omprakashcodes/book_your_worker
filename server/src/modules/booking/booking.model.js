@@ -49,6 +49,34 @@ const bookingSchema = new mongoose.Schema(
             min: 0,
         },
 
+        paymentStatus: {
+            type: String,
+            enum: ["pending", "created", "paid", "failed", "refunded"],
+            default: "pending",
+        },
+
+        razorpayOrderId: {
+            type: String,
+            default: null,
+        },
+
+        razorpayPaymentId: {
+            type: String,
+            default: null,
+        },
+
+        razorpaySignature: {
+            type: String,
+            default: null,
+        },
+
+        liveLocation: {
+            latitude: { type: Number, min: -90, max: 90, default: null },
+            longitude: { type: Number, min: -180, max: 180, default: null },
+            updatedAt: { type: Date, default: null },
+            isSharing: { type: Boolean, default: false },
+        },
+
         status: {
             type: String,
             enum: [

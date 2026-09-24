@@ -1,83 +1,70 @@
 const Worker = require("../worker/worker.model");
+const Auth = require("../auth/auth.model");
 
+// Get all workers
+const getAllWorkers = async (status) => {
+  const filter = {};
+
+  if (status && status !== "all") {
+    filter.verificationStatus = status;
+  }
+
+  return await Worker.find(filter)
+    .populate("userId", "name email role")
+    .sort({ createdAt: -1 });
+};
+
+// Get pending workers
 const getPendingWorkers = async () => {
-    const workers = await Worker.find({
-        verificationStatus: "pending",
-    })
-        .populate("userId", "name email role")
-        .sort({ createdAt: -1 });
-
-    return workers;
+  return await Worker.find({ verificationStatus: "pending" })
+    .populate("userId", "name email role")
+    .sort({ createdAt: -1 });
 };
 
-const getWorkerById = async (workerId) => {
-    const worker = await Worker.findById(workerId)
-        .populate("userId", "name email role");
-
-    if (!worker) {
-        throw new Error("Worker not found");
-    }
-
-    return worker;
+// Get worker by ID
+const getWorkerById = async (id) => {
+  return await Worker.findById(id)
+    .populate("userId", "name email role");
 };
 
-const getAllWorkers = async () => {
-    const workers = await Worker.find()
-        .populate("userId", "name email role")
-        .sort({ createdAt: -1 });
-
-    return workers;
+// Approve worker
+const approveWorker = async (id) => {
+  return await Worker.findByIdAndUpdate(
+    id,
+    {
+      verificationStatus: "approved",
+      rejectionReason: null,
+      verifiedAt: new Date(),
+    },
+    { new: true }
+  ).populate("userId", "name email role");
 };
 
-const approveWorker = async (workerId) => {
-    const worker = await Worker.findById(workerId);
-
-    if (!worker) {
-        throw new Error("Worker not found");
-    }
-
-    if (worker.verificationStatus === "approved") {
-        throw new Error("Worker is already approved");
-    }
-
-    worker.verificationStatus = "approved";
-    worker.rejectionReason = null;
-    worker.verifiedAt = new Date();
-
-    await worker.save();
-
-    return worker;
+// Reject worker
+const rejectWorker = async (id, reason) => {
+  return await Worker.findByIdAndUpdate(
+    id,
+    {
+      verificationStatus: "rejected",
+      rejectionReason: reason,
+      verifiedAt: null,
+    },
+    { new: true }
+  ).populate("userId", "name email role");
 };
 
-const rejectWorker = async (workerId, rejectionReason) => {
-    const worker = await Worker.findById(workerId);
-
-    if (!worker) {
-        throw new Error("Worker not found");
-    }
-
-    if (worker.verificationStatus === "approved") {
-        throw new Error("Approved worker cannot be rejected");
-    }
-
-    if (!rejectionReason || !rejectionReason.trim()) {
-        throw new Error("Rejection reason is required");
-    }
-
-    worker.verificationStatus = "rejected";
-    worker.rejectionReason = rejectionReason.trim();
-    worker.verifiedAt = null;
-
-    await worker.save();
-
-    return worker;
+// Get ALL registered accounts
+const getAllUsers = async () => {
+  return await Auth.find()
+    .select("-password")
+    .sort({ createdAt: -1 });
 };
 
 module.exports = {
-    getPendingWorkers,
-     getWorkerById,
-     approveWorker,
-     rejectWorker,
-     getAllWorkers,
+  getAllWorkers,
+  getPendingWorkers,
+  getWorkerById,
+  approveWorker,
+  rejectWorker,
+  getAllUsers,
 };
-

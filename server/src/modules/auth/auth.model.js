@@ -16,6 +16,13 @@ const authSchema = new mongoose.Schema(
             trim: true,
         },
 
+        phone: {
+            type: String,
+            trim: true,
+            unique: true,
+            sparse: true,
+        },
+
         password: {
             type: String,
             required: true,
@@ -27,6 +34,10 @@ const authSchema = new mongoose.Schema(
             enum: ["customer", "worker", "admin"],
             default: "customer",
         },
+
+        passwordResetTokenHash: { type: String, default: null },
+        passwordResetExpiresAt: { type: Date, default: null },
+
     },
     {
         timestamps: true,

@@ -93,10 +93,30 @@ const rejectWorker = async (req, res) => {
         });
     }
 };
+
+// Get all registered users for Admin
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await adminService.getAllUsers();
+
+        return res.status(200).json({
+            success: true,
+            message: "All users fetched successfully",
+            data: users,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 module.exports = {
     getPendingWorkers,
     getWorkerById,
     approveWorker,
     rejectWorker,
     getAllWorkers,
+    getAllUsers,
 };

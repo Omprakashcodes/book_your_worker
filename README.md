@@ -58,3 +58,52 @@ BookYourWorker/
 ├── .gitignore
 ├── package.json
 └── README.md
+```
+
+## Run Locally
+
+Prerequisites: Node.js, Docker Desktop, and a Razorpay test account.
+
+1. Start MongoDB:
+
+	```powershell
+	docker start bookmyworker-mongodb
+	```
+
+	If the container does not exist yet:
+
+	```powershell
+	docker run -d --name bookmyworker-mongodb -p 27017:27017 -v bookmyworker-mongodb-data:/data/db mongo:8
+	```
+
+2. Add Razorpay test credentials to `server/.env`:
+
+	```env
+	RAZORPAY_KEY_ID=rzp_test_your_key_id
+	RAZORPAY_KEY_SECRET=your_razorpay_test_secret
+	```
+
+3. Start the backend in one terminal:
+
+	```powershell
+	cd server
+	npm run dev
+	```
+
+4. Start the frontend in a second terminal:
+
+	```powershell
+	cd client
+	npm run dev
+	```
+
+Open `http://localhost:3000`. A booking now creates a Razorpay test order and is only submitted after the backend verifies the payment signature.
+
+Login currently uses email and password. Mobile OTP login is disabled until the feature is added again.
+
+To create the development admin account once:
+
+```powershell
+cd server
+node createAdmin.js
+```

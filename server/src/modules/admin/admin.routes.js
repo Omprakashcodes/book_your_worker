@@ -6,6 +6,7 @@ const {
     approveWorker,
     rejectWorker,
     getAllWorkers,
+    getAllUsers,
 } = require("./admin.controller");
 
 const authMiddleware = require("../../middleware/auth.middleware");
@@ -13,6 +14,7 @@ const adminMiddleware = require("../../middleware/admin.middleware");
 
 const router = express.Router();
 
+// Worker Management
 router.get(
     "/workers",
     authMiddleware,
@@ -46,6 +48,14 @@ router.patch(
     authMiddleware,
     adminMiddleware,
     rejectWorker
+);
+
+// User Management
+router.get(
+    "/users",
+    authMiddleware,
+    adminMiddleware,
+    getAllUsers
 );
 
 module.exports = router;

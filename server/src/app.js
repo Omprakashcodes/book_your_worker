@@ -11,6 +11,8 @@ const userRoutes = require("./modules/user/user.routes");
 const workerRoutes = require("./modules/worker/worker.routes");
 const adminRoutes = require("./modules/admin/admin.routes");
 const bookingRoutes = require("./modules/booking/booking.routes");
+const notificationRoutes = require("./modules/notification/notification.routes");
+const paymentRoutes = require("./modules/payment/payment.routes");
 const app = express();
 
 // =========================
@@ -42,14 +44,16 @@ app.use(morgan("dev"));
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
     message: {
         success: false,
         message: "Too many requests, please try again later.",
     },
 });
 
-app.use(limiter);
+app.use("/api", limiter);
 
 // =========================
 // Static Files
@@ -70,6 +74,10 @@ app.use("/api/workers", workerRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use("/api/bookings", bookingRoutes);
+
+app.use("/api/notifications", notificationRoutes);
+
+app.use("/api/payments", paymentRoutes);
 
 // =========================
 // Health Check

@@ -7,6 +7,9 @@ const {
     rejectBooking,
     getMyBookings,
     completeBooking,
+    cancelBooking,
+    updateLiveLocation,
+    getLiveLocation,
 } = require("./booking.controller");
 
 const authMiddleware = require("../../middleware/auth.middleware");
@@ -43,5 +46,20 @@ router.patch(
     "/:id/complete",
     authMiddleware,
     completeBooking
+);
+router.patch(
+    "/:id/cancel",
+    authMiddleware,
+    cancelBooking
+);
+router.patch(
+    "/:id/live-location",
+    authMiddleware,
+    updateLiveLocation
+);
+router.get(
+    "/:id/live-location",
+    authMiddleware,
+    getLiveLocation
 );
 module.exports = router;

@@ -1,7 +1,19 @@
 const Booking = require("./booking.model");
 const Worker = require("../worker/worker.model");
+const Auth = require("../auth/auth.model");
+const notificationService = require("../notification/notification.service");
 
 const createBooking = async (customerId, bookingData) => {
+    const customer = await Auth.findById(customerId);
+
+    if (!customer) {
+        throw new Error("User not found");
+    }
+
+    if (customer.role !== "customer") {
+        throw new Error("Only customers can create bookings");
+    }
+
     const {
         workerId,
         service,
@@ -9,7 +21,6 @@ const createBooking = async (customerId, bookingData) => {
         bookingTime,
         address,
         description,
-        amount,
     } = bookingData;
 
     const worker = await Worker.findById(workerId);
@@ -22,8 +33,19 @@ const createBooking = async (customerId, bookingData) => {
         throw new Error("Worker is not approved");
     }
 
-    if (!service || !bookingDate || !bookingTime || !address || amount === undefined) {
+    if (
+        !service ||
+        !bookingDate ||
+        !bookingTime ||
+        !address
+    ) {
         throw new Error("Required booking fields are missing");
+    }
+
+    const amount = Number(worker.dailyWage);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error("Worker pricing is not configured");
     }
 
     const booking = await Booking.create({
@@ -36,6 +58,16 @@ const createBooking = async (customerId, bookingData) => {
         description,
         amount,
         status: "pending",
+    });
+
+    // Notify worker about the new booking
+    await notificationService.createNotification({
+        userId: worker.userId,
+        title: "New Booking Request! 🔔",
+        message:
+            `A customer has requested your ${service} service. Review the booking and respond now.`,
+        type: "booking_created",
+        relatedId: booking._id,
     });
 
     return booking;
@@ -87,8 +119,19 @@ const acceptBooking = async (workerUserId, bookingId) => {
 
     await booking.save();
 
+    // Notify customer about accepted booking
+    await notificationService.createNotification({
+        userId: booking.customerId,
+        title: "Booking Accepted! 🎉",
+        message:
+            `Your ${booking.service} booking has been accepted by the professional. You're all set!`,
+        type: "booking_accepted",
+        relatedId: booking._id,
+    });
+
     return booking;
 };
+
 const rejectBooking = async (workerUserId, bookingId) => {
     const worker = await Worker.findOne({
         userId: workerUserId,
@@ -116,8 +159,19 @@ const rejectBooking = async (workerUserId, bookingId) => {
 
     await booking.save();
 
+    // Notify customer about rejected booking
+    await notificationService.createNotification({
+        userId: booking.customerId,
+        title: "Booking Update",
+        message:
+            `Unfortunately, your ${booking.service} booking could not be accepted. Explore other trusted professionals on Servigo.`,
+        type: "booking_rejected",
+        relatedId: booking._id,
+    });
+
     return booking;
 };
+
 const getMyBookings = async (customerId) => {
     const bookings = await Booking.find({
         customerId,
@@ -128,6 +182,7 @@ const getMyBookings = async (customerId) => {
 
     return bookings;
 };
+
 const completeBooking = async (workerUserId, bookingId) => {
     const worker = await Worker.findOne({
         userId: workerUserId,
@@ -155,8 +210,109 @@ const completeBooking = async (workerUserId, bookingId) => {
 
     await booking.save();
 
+    // Notify customer
+    await notificationService.createNotification({
+        userId: booking.customerId,
+        title: "Service Completed! ⭐",
+        message:
+            `Your ${booking.service} service has been successfully completed. Thank you for choosing Servigo!`,
+        type: "booking_completed",
+        relatedId: booking._id,
+    });
+
+    // Notify worker
+    await notificationService.createNotification({
+        userId: worker.userId,
+        title: "Service Completed! ✅",
+        message:
+            `The ${booking.service} booking has been successfully completed. Great work!`,
+        type: "booking_completed",
+        relatedId: booking._id,
+    });
+
     return booking;
 };
+
+const cancelBooking = async (customerId, bookingId) => {
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+        throw new Error("Booking not found");
+    }
+
+    if (booking.customerId.toString() !== customerId.toString()) {
+        throw new Error("You are not authorized to cancel this booking");
+    }
+
+    if (booking.status !== "pending") {
+        throw new Error("Only pending bookings can be cancelled");
+    }
+
+    booking.status = "cancelled";
+
+    await booking.save();
+
+    // Get worker so we can notify them
+    const worker = await Worker.findById(booking.workerId);
+
+    if (worker) {
+        await notificationService.createNotification({
+            userId: worker.userId,
+            title: "Booking Cancelled",
+            message:
+                `The customer has cancelled the ${booking.service} booking.`,
+            type: "booking_cancelled",
+            relatedId: booking._id,
+        });
+    }
+
+    return booking;
+};
+
+const updateLiveLocation = async (workerUserId, bookingId, locationData) => {
+    const worker = await Worker.findOne({ userId: workerUserId });
+    const booking = await Booking.findById(bookingId);
+
+    if (!worker || !booking || booking.workerId.toString() !== worker._id.toString()) {
+        throw new Error("You are not authorized to share location for this booking");
+    }
+
+    if (booking.status !== "accepted") {
+        throw new Error("Live location is available only for accepted bookings");
+    }
+
+    const latitude = Number(locationData.latitude);
+    const longitude = Number(locationData.longitude);
+
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+        !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        throw new Error("Valid latitude and longitude are required");
+    }
+
+    booking.liveLocation = {
+        latitude,
+        longitude,
+        updatedAt: new Date(),
+        isSharing: locationData.isSharing !== false,
+    };
+    await booking.save();
+    return booking.liveLocation;
+};
+
+const getLiveLocation = async (customerId, bookingId) => {
+    const booking = await Booking.findOne({ _id: bookingId, customerId }).select("status liveLocation");
+
+    if (!booking) {
+        throw new Error("Booking not found");
+    }
+
+    if (!booking.liveLocation?.isSharing || booking.liveLocation.latitude === null) {
+        return { isSharing: false, latitude: null, longitude: null, updatedAt: null };
+    }
+
+    return booking.liveLocation;
+};
+
 module.exports = {
     createBooking,
     getWorkerBookings,
@@ -164,4 +320,7 @@ module.exports = {
     rejectBooking,
     getMyBookings,
     completeBooking,
+    cancelBooking,
+    updateLiveLocation,
+    getLiveLocation,
 };

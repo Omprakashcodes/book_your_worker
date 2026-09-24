@@ -114,6 +114,49 @@ const completeBooking = async (req, res) => {
         });
     }
 };
+const cancelBooking = async (req, res) => {
+    try {
+        const booking = await bookingService.cancelBooking(
+            req.user.userId,
+            req.params.id
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Booking cancelled successfully",
+            data: booking,
+        });
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+const updateLiveLocation = async (req, res) => {
+    try {
+        const location = await bookingService.updateLiveLocation(
+            req.user.userId,
+            req.params.id,
+            req.body
+        );
+        return res.status(200).json({ success: true, data: location });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+const getLiveLocation = async (req, res) => {
+    try {
+        const location = await bookingService.getLiveLocation(
+            req.user.userId,
+            req.params.id
+        );
+        return res.status(200).json({ success: true, data: location });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
 module.exports = {
     createBooking,
     getWorkerBookings,
@@ -121,4 +164,7 @@ module.exports = {
     rejectBooking,
     getMyBookings,
     completeBooking,
+    cancelBooking,
+    updateLiveLocation,
+    getLiveLocation,
 };
