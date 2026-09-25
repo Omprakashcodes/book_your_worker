@@ -5,7 +5,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -52,6 +52,9 @@ export const getErrorMessage = (error: unknown, defaultMessage = 'An unexpected 
     }
     if (error.code === 'ERR_NETWORK') {
       return `Cannot reach server at ${API_BASE_URL}. Please ensure your backend is running.`;
+    }
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      return 'The backend is waking up. Please try again in a few seconds.';
     }
     if (error.message) {
       return error.message;
