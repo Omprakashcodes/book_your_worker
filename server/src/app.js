@@ -15,6 +15,8 @@ const notificationRoutes = require("./modules/notification/notification.routes")
 const paymentRoutes = require("./modules/payment/payment.routes");
 const app = express();
 
+app.set("trust proxy", 1);
+
 // =========================
 // Security Middleware
 // =========================
