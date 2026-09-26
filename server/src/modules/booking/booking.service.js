@@ -3,15 +3,25 @@ const Worker = require("../worker/worker.model");
 const Auth = require("../auth/auth.model");
 const notificationService = require("../notification/notification.service");
 const crypto = require("crypto");
+const fs = require("fs/promises");
+const path = require("path");
+const { evidenceDirectory, toEvidenceRecord } = require("../../middleware/evidence-upload.middleware");
 
-const createBooking = async (customerId, bookingData) => {
+const removeUploadedFiles = async (files = []) => {
+    await Promise.all(files.map((file) => fs.unlink(file.path).catch(() => {})));
+};
+
+const createBooking = async (customerId, bookingData, problemPhotos = []) => {
+    const discardUploads = () => removeUploadedFiles(problemPhotos);
     const customer = await Auth.findById(customerId);
 
     if (!customer) {
+        await discardUploads();
         throw new Error("User not found");
     }
 
     if (customer.role !== "customer") {
+        await discardUploads();
         throw new Error("Only customers can create bookings");
     }
 
@@ -27,10 +37,12 @@ const createBooking = async (customerId, bookingData) => {
     const worker = await Worker.findById(workerId);
 
     if (!worker) {
+        await discardUploads();
         throw new Error("Worker not found");
     }
 
     if (worker.verificationStatus !== "approved") {
+        await discardUploads();
         throw new Error("Worker is not approved");
     }
 
@@ -40,12 +52,14 @@ const createBooking = async (customerId, bookingData) => {
         !bookingTime ||
         !address
     ) {
+        await discardUploads();
         throw new Error("Required booking fields are missing");
     }
 
     const amount = Number(worker.dailyWage);
 
     if (!Number.isFinite(amount) || amount <= 0) {
+        await discardUploads();
         throw new Error("Worker pricing is not configured");
     }
 
@@ -57,6 +71,7 @@ const createBooking = async (customerId, bookingData) => {
         bookingTime,
         address,
         description,
+        problemPhotos: problemPhotos.map(toEvidenceRecord),
         amount,
         status: "pending",
     });
@@ -214,6 +229,9 @@ const completeBooking = async (workerUserId, bookingId) => {
 
     if (!booking.arrivalOtpVerifiedAt) {
         throw new Error("Verify the customer's arrival code before completing this booking");
+    }
+    if (!booking.solutionPhotos?.length) {
+        throw new Error("Upload at least one solution photo before completing this booking");
     }
 
     booking.status = "completed";
@@ -385,6 +403,61 @@ const verifyArrivalCode = async (workerUserId, bookingId, code) => {
     return booking;
 };
 
+const addSolutionPhotos = async (workerUserId, bookingId, photoFiles) => {
+    const cleanup = () => removeUploadedFiles(photoFiles);
+    const worker = await Worker.findOne({ userId: workerUserId });
+    const booking = await Booking.findById(bookingId);
+
+    if (!worker || !booking || booking.workerId.toString() !== worker._id.toString()) {
+        await cleanup();
+        throw new Error("You are not authorized to upload evidence for this booking");
+    }
+    if (booking.status !== "accepted" || !booking.arrivalOtpVerifiedAt) {
+        await cleanup();
+        throw new Error("Verify arrival before uploading solution photos");
+    }
+    if (booking.solutionPhotos.length + photoFiles.length > 5) {
+        await cleanup();
+        throw new Error("A maximum of five solution photos is allowed per booking");
+    }
+
+    booking.solutionPhotos.push(...photoFiles.map(toEvidenceRecord));
+    await booking.save();
+    return booking.solutionPhotos;
+};
+
+const getEvidenceFile = async (userId, bookingId, kind, filename) => {
+    if (!["problem", "solution"].includes(kind) || !/^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i.test(filename)) {
+        throw new Error("Evidence file not found");
+    }
+
+    const booking = await Booking.findById(bookingId).select("customerId workerId problemPhotos solutionPhotos");
+    if (!booking) {
+        throw new Error("Booking not found");
+    }
+
+    const user = await Auth.findById(userId).select("role");
+    let isAuthorized = booking.customerId.toString() === userId.toString();
+    if (!isAuthorized && user?.role === "worker") {
+        const worker = await Worker.findOne({ userId });
+        isAuthorized = Boolean(worker && booking.workerId.toString() === worker._id.toString());
+    }
+    if (!isAuthorized) {
+        throw new Error("You are not authorized to view this evidence");
+    }
+
+    const photoList = kind === "problem" ? booking.problemPhotos : booking.solutionPhotos;
+    const photo = photoList.find((item) => item.filename === filename);
+    if (!photo) {
+        throw new Error("Evidence file not found");
+    }
+
+    return {
+        filePath: path.join(evidenceDirectory, filename),
+        mimeType: photo.mimeType,
+    };
+};
+
 module.exports = {
     createBooking,
     getWorkerBookings,
@@ -397,4 +470,6 @@ module.exports = {
     getLiveLocation,
     issueArrivalCode,
     verifyArrivalCode,
+    addSolutionPhotos,
+    getEvidenceFile,
 };

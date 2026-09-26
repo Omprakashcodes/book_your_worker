@@ -12,15 +12,19 @@ const {
     getLiveLocation,
     issueArrivalCode,
     verifyArrivalCode,
+    addSolutionPhotos,
+    getEvidenceFile,
 } = require("./booking.controller");
 
 const authMiddleware = require("../../middleware/auth.middleware");
+const evidenceUpload = require("../../middleware/evidence-upload.middleware");
 
 const router = express.Router();
 
 router.post(
     "/",
     authMiddleware,
+    evidenceUpload.uploadPhotos("problemPhotos"),
     createBooking
 );
 router.get(
@@ -66,4 +70,6 @@ router.get(
 );
 router.post("/:id/arrival-code", authMiddleware, issueArrivalCode);
 router.post("/:id/verify-arrival", authMiddleware, verifyArrivalCode);
+router.post("/:id/solution-photos", authMiddleware, evidenceUpload.uploadPhotos("solutionPhotos"), addSolutionPhotos);
+router.get("/:id/evidence/:kind/:filename", authMiddleware, getEvidenceFile);
 module.exports = router;

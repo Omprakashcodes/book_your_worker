@@ -42,23 +42,33 @@ export interface BookingReview {
   createdAt?: string;
 }
 
+export interface EvidencePhoto {
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  uploadedAt?: string;
+}
+
 export const bookingService = {
   /**
    * POST /api/bookings/ - Create customer booking for an approved worker
    */
-  async createBooking(payload: CreateBookingPayload): Promise<Booking> {
+  async createBooking(payload: CreateBookingPayload, problemPhotos: File[] = []): Promise<Booking> {
     try {
-      const body = {
-        workerId: payload.workerId,
-        service: payload.service,
-        bookingDate: payload.bookingDate || payload.date,
-        bookingTime: payload.bookingTime || payload.time,
-        address: payload.address,
-        amount: payload.amount,
-        description: payload.description || undefined,
-      };
+      const body = new FormData();
+      body.append('workerId', payload.workerId);
+      body.append('service', payload.service);
+      body.append('bookingDate', payload.bookingDate || payload.date || '');
+      body.append('bookingTime', payload.bookingTime || payload.time || '');
+      body.append('address', payload.address);
+      body.append('amount', String(payload.amount));
+      if (payload.description) body.append('description', payload.description);
+      problemPhotos.forEach((photo) => body.append('problemPhotos', photo));
 
-      const response = await api.post<ApiResponse<Booking> | Booking>('/bookings/', body);
+      const response = await api.post<ApiResponse<Booking> | Booking>('/bookings/', body, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       const data = response.data;
       const created = (data as any)?.data || (data as any)?.booking || data;
       return created;
@@ -132,6 +142,33 @@ export const bookingService = {
       return response.data.data as Booking;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Could not verify arrival code'));
+    }
+  },
+
+  async uploadSolutionPhotos(bookingId: string, photos: File[]): Promise<EvidencePhoto[]> {
+    try {
+      const body = new FormData();
+      photos.forEach((photo) => body.append('solutionPhotos', photo));
+      const response = await api.post<ApiResponse<EvidencePhoto[]>>(
+        `/bookings/${bookingId}/solution-photos`,
+        body,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      return response.data.data || [];
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not upload solution photos'));
+    }
+  },
+
+  async getEvidenceObjectUrl(bookingId: string, kind: 'problem' | 'solution', filename: string): Promise<string> {
+    try {
+      const response = await api.get<Blob>(
+        `/bookings/${bookingId}/evidence/${kind}/${encodeURIComponent(filename)}`,
+        { responseType: 'blob' }
+      );
+      return URL.createObjectURL(response.data);
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not load booking photo'));
     }
   },
 

@@ -79,6 +79,8 @@ export interface Booking {
     isSharing: boolean;
   };
   arrivalOtpVerifiedAt?: string | null;
+  problemPhotos?: Array<{ filename: string; originalName: string; mimeType: string; size: number; uploadedAt?: string }>;
+  solutionPhotos?: Array<{ filename: string; originalName: string; mimeType: string; size: number; uploadedAt?: string }>;
   status: BookingStatus;
   createdAt?: string;
   updatedAt?: string;

@@ -1,10 +1,12 @@
 const bookingService = require("./booking.service");
+const fs = require("fs/promises");
 
 const createBooking = async (req, res) => {
     try {
         const booking = await bookingService.createBooking(
             req.user.userId,
-            req.body
+            req.body,
+            req.files || []
         );
 
         return res.status(201).json({
@@ -13,6 +15,7 @@ const createBooking = async (req, res) => {
             data: booking,
         });
     } catch (error) {
+        await Promise.all((req.files || []).map((file) => fs.unlink(file.path).catch(() => {})));
         return res.status(400).json({
             success: false,
             message: error.message,
@@ -179,6 +182,40 @@ const verifyArrivalCode = async (req, res) => {
         return res.status(400).json({ success: false, message: error.message });
     }
 };
+
+const addSolutionPhotos = async (req, res) => {
+    try {
+        if (!req.files?.length) {
+            return res.status(400).json({ success: false, message: "Choose at least one solution photo" });
+        }
+        const photos = await bookingService.addSolutionPhotos(
+            req.user.userId,
+            req.params.id,
+            req.files
+        );
+        return res.status(200).json({ success: true, data: photos });
+    } catch (error) {
+        await Promise.all((req.files || []).map((file) => fs.unlink(file.path).catch(() => {})));
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+const getEvidenceFile = async (req, res) => {
+    try {
+        const evidence = await bookingService.getEvidenceFile(
+            req.user.userId,
+            req.params.id,
+            req.params.kind,
+            req.params.filename
+        );
+        res.set("Cache-Control", "private, no-store");
+        res.set("X-Content-Type-Options", "nosniff");
+        return res.type(evidence.mimeType).sendFile(evidence.filePath);
+    } catch (error) {
+        const status = error.message.includes("authorized") ? 403 : 404;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
 module.exports = {
     createBooking,
     getWorkerBookings,
@@ -191,4 +228,6 @@ module.exports = {
     getLiveLocation,
     issueArrivalCode,
     verifyArrivalCode,
+    addSolutionPhotos,
+    getEvidenceFile,
 };

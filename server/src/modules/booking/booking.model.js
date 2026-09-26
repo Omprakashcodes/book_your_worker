@@ -43,6 +43,22 @@ const bookingSchema = new mongoose.Schema(
             default: "",
         },
 
+        problemPhotos: [{
+            filename: { type: String, required: true },
+            originalName: { type: String, required: true },
+            mimeType: { type: String, required: true },
+            size: { type: Number, required: true },
+            uploadedAt: { type: Date, default: Date.now },
+        }],
+
+        solutionPhotos: [{
+            filename: { type: String, required: true },
+            originalName: { type: String, required: true },
+            mimeType: { type: String, required: true },
+            size: { type: Number, required: true },
+            uploadedAt: { type: Date, default: Date.now },
+        }],
+
         amount: {
             type: Number,
             required: true,

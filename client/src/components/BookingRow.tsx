@@ -25,6 +25,8 @@ import {
   Star,
 } from 'lucide-react';
 import { bookingService, BookingReview, LiveLocation } from '../services/bookingService';
+import { BookingEvidenceGallery } from './BookingEvidenceGallery';
+import { EvidencePhoto } from '../services/bookingService';
 import toast from 'react-hot-toast';
 
 interface BookingRowProps {
@@ -59,6 +61,8 @@ export const BookingRow: React.FC<BookingRowProps> = ({
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [solutionPhotos, setSolutionPhotos] = useState<EvidencePhoto[]>(booking.solutionPhotos || []);
+  const [isUploadingSolutionPhotos, setIsUploadingSolutionPhotos] = useState(false);
   const locationWatchRef = useRef<number | null>(null);
 
   // Normalize worker object
@@ -163,6 +167,7 @@ export const BookingRow: React.FC<BookingRowProps> = ({
     try {
       const result = await bookingService.issueArrivalCode(bookingId);
       setArrivalCode(result.code);
+      setIsExpanded(true);
       toast.success('Show this code to your worker when they arrive.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not create arrival code');
@@ -190,6 +195,31 @@ export const BookingRow: React.FC<BookingRowProps> = ({
       toast.error(error instanceof Error ? error.message : 'Could not submit feedback');
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const handleSolutionPhotoSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!selected.length) return;
+    if (selected.some((photo) => photo.size > 8 * 1024 * 1024)) {
+      toast.error('Each photo must be 8 MB or smaller.');
+      return;
+    }
+    const available = Math.max(0, 5 - solutionPhotos.length);
+    if (selected.length > available) toast.error('You can attach up to five solution photos.');
+    const files = selected.slice(0, available);
+    if (!files.length) return;
+
+    setIsUploadingSolutionPhotos(true);
+    try {
+      const photos = await bookingService.uploadSolutionPhotos(bookingId, files);
+      setSolutionPhotos(photos);
+      toast.success('Solution photos uploaded.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not upload solution photos');
+    } finally {
+      setIsUploadingSolutionPhotos(false);
     }
   };
 
@@ -439,8 +469,9 @@ export const BookingRow: React.FC<BookingRowProps> = ({
               {isWorkerDashboard && canWorkerComplete && onCompleteClick && (
                 <button
                   type="button"
-                  disabled={isActionLoading}
+                  disabled={isActionLoading || !isArrivalVerified || !solutionPhotos.length}
                   onClick={() => onCompleteClick(booking)}
+                  title={!isArrivalVerified ? 'Verify the customer arrival code first' : !solutionPhotos.length ? 'Upload a solution photo first' : 'Mark this booking complete'}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
@@ -540,6 +571,33 @@ export const BookingRow: React.FC<BookingRowProps> = ({
 
               {isWorkerDashboard && locationError && (
                 <p className="text-rose-600">{locationError}</p>
+              )}
+
+              {booking.problemPhotos?.length ? (
+                <BookingEvidenceGallery bookingId={bookingId} kind="problem" photos={booking.problemPhotos} />
+              ) : null}
+
+              {solutionPhotos.length > 0 && (
+                <BookingEvidenceGallery bookingId={bookingId} kind="solution" photos={solutionPhotos} />
+              )}
+
+              {isWorkerDashboard && normalizedStatus === 'accepted' && isArrivalVerified && solutionPhotos.length < 5 && (
+                <div className="md:col-span-2 rounded-lg border border-dashed border-slate-300 bg-white p-3">
+                  <label htmlFor={`solution-photos-${bookingId}`} className="mb-1 block text-xs font-semibold text-slate-800">
+                    Add solution photos {solutionPhotos.length === 0 ? '(required to complete)' : `(${solutionPhotos.length}/5)`}
+                  </label>
+                  <p className="mb-2 text-[11px] text-slate-500">Upload clear photos of the completed work. JPG, PNG, WebP or GIF, up to 8 MB each.</p>
+                  <input
+                    id={`solution-photos-${bookingId}`}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    multiple
+                    onChange={handleSolutionPhotoSelection}
+                    disabled={isUploadingSolutionPhotos}
+                    className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200 disabled:opacity-50"
+                  />
+                  {isUploadingSolutionPhotos && <p className="mt-2 text-xs text-indigo-700">Uploading photos...</p>}
+                </div>
               )}
 
               {!isWorkerDashboard && arrivalCode && normalizedStatus === 'accepted' && (
