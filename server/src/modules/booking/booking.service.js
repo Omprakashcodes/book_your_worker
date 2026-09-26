@@ -3,25 +3,20 @@ const Worker = require("../worker/worker.model");
 const Auth = require("../auth/auth.model");
 const notificationService = require("../notification/notification.service");
 const crypto = require("crypto");
-const fs = require("fs/promises");
-const path = require("path");
-const { evidenceDirectory, toEvidenceRecord } = require("../../middleware/evidence-upload.middleware");
-
-const removeUploadedFiles = async (files = []) => {
-    await Promise.all(files.map((file) => fs.unlink(file.path).catch(() => {})));
-};
+const {
+    uploadEvidenceFiles,
+    deleteEvidenceFiles,
+    getAuthenticatedEvidence,
+} = require("../../middleware/evidence-upload.middleware");
 
 const createBooking = async (customerId, bookingData, problemPhotos = []) => {
-    const discardUploads = () => removeUploadedFiles(problemPhotos);
     const customer = await Auth.findById(customerId);
 
     if (!customer) {
-        await discardUploads();
         throw new Error("User not found");
     }
 
     if (customer.role !== "customer") {
-        await discardUploads();
         throw new Error("Only customers can create bookings");
     }
 
@@ -37,12 +32,10 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
     const worker = await Worker.findById(workerId);
 
     if (!worker) {
-        await discardUploads();
         throw new Error("Worker not found");
     }
 
     if (worker.verificationStatus !== "approved") {
-        await discardUploads();
         throw new Error("Worker is not approved");
     }
 
@@ -52,29 +45,34 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
         !bookingTime ||
         !address
     ) {
-        await discardUploads();
         throw new Error("Required booking fields are missing");
     }
 
     const amount = Number(worker.dailyWage);
 
     if (!Number.isFinite(amount) || amount <= 0) {
-        await discardUploads();
         throw new Error("Worker pricing is not configured");
     }
 
-    const booking = await Booking.create({
-        customerId,
-        workerId,
-        service,
-        bookingDate,
-        bookingTime,
-        address,
-        description,
-        problemPhotos: problemPhotos.map(toEvidenceRecord),
-        amount,
-        status: "pending",
-    });
+    const storedProblemPhotos = await uploadEvidenceFiles(problemPhotos);
+    let booking;
+    try {
+        booking = await Booking.create({
+            customerId,
+            workerId,
+            service,
+            bookingDate,
+            bookingTime,
+            address,
+            description,
+            problemPhotos: storedProblemPhotos,
+            amount,
+            status: "pending",
+        });
+    } catch (error) {
+        await deleteEvidenceFiles(storedProblemPhotos);
+        throw error;
+    }
 
     // Notify worker about the new booking
     await notificationService.createNotification({
@@ -404,25 +402,27 @@ const verifyArrivalCode = async (workerUserId, bookingId, code) => {
 };
 
 const addSolutionPhotos = async (workerUserId, bookingId, photoFiles) => {
-    const cleanup = () => removeUploadedFiles(photoFiles);
     const worker = await Worker.findOne({ userId: workerUserId });
     const booking = await Booking.findById(bookingId);
 
     if (!worker || !booking || booking.workerId.toString() !== worker._id.toString()) {
-        await cleanup();
         throw new Error("You are not authorized to upload evidence for this booking");
     }
     if (booking.status !== "accepted" || !booking.arrivalOtpVerifiedAt) {
-        await cleanup();
         throw new Error("Verify arrival before uploading solution photos");
     }
     if (booking.solutionPhotos.length + photoFiles.length > 5) {
-        await cleanup();
         throw new Error("A maximum of five solution photos is allowed per booking");
     }
 
-    booking.solutionPhotos.push(...photoFiles.map(toEvidenceRecord));
-    await booking.save();
+    const storedPhotos = await uploadEvidenceFiles(photoFiles);
+    booking.solutionPhotos.push(...storedPhotos);
+    try {
+        await booking.save();
+    } catch (error) {
+        await deleteEvidenceFiles(storedPhotos);
+        throw error;
+    }
     return booking.solutionPhotos;
 };
 
@@ -452,10 +452,7 @@ const getEvidenceFile = async (userId, bookingId, kind, filename) => {
         throw new Error("Evidence file not found");
     }
 
-    return {
-        filePath: path.join(evidenceDirectory, filename),
-        mimeType: photo.mimeType,
-    };
+    return getAuthenticatedEvidence(photo);
 };
 
 module.exports = {

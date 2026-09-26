@@ -45,6 +45,8 @@ const bookingSchema = new mongoose.Schema(
 
         problemPhotos: [{
             filename: { type: String, required: true },
+            publicId: { type: String },
+            version: { type: Number },
             originalName: { type: String, required: true },
             mimeType: { type: String, required: true },
             size: { type: Number, required: true },
@@ -53,6 +55,8 @@ const bookingSchema = new mongoose.Schema(
 
         solutionPhotos: [{
             filename: { type: String, required: true },
+            publicId: { type: String },
+            version: { type: Number },
             originalName: { type: String, required: true },
             mimeType: { type: String, required: true },
             size: { type: Number, required: true },

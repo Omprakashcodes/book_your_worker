@@ -33,5 +33,9 @@ services:
         sync: false
       - key: BREVO_API_KEY
         sync: false
-      - key: BOOKING_UPLOAD_DIR
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
         sync: false

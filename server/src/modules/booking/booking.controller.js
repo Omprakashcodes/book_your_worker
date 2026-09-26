@@ -1,5 +1,4 @@
 const bookingService = require("./booking.service");
-const fs = require("fs/promises");
 
 const createBooking = async (req, res) => {
     try {
@@ -15,7 +14,6 @@ const createBooking = async (req, res) => {
             data: booking,
         });
     } catch (error) {
-        await Promise.all((req.files || []).map((file) => fs.unlink(file.path).catch(() => {})));
         return res.status(400).json({
             success: false,
             message: error.message,
@@ -195,7 +193,6 @@ const addSolutionPhotos = async (req, res) => {
         );
         return res.status(200).json({ success: true, data: photos });
     } catch (error) {
-        await Promise.all((req.files || []).map((file) => fs.unlink(file.path).catch(() => {})));
         return res.status(400).json({ success: false, message: error.message });
     }
 };
@@ -210,7 +207,7 @@ const getEvidenceFile = async (req, res) => {
         );
         res.set("Cache-Control", "private, no-store");
         res.set("X-Content-Type-Options", "nosniff");
-        return res.type(evidence.mimeType).sendFile(evidence.filePath);
+        return res.type(evidence.mimeType).send(evidence.buffer);
     } catch (error) {
         const status = error.message.includes("authorized") ? 403 : 404;
         return res.status(status).json({ success: false, message: error.message });
