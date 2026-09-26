@@ -22,8 +22,10 @@ import {
   X,
   User,
   Navigation,
+  Star,
 } from 'lucide-react';
-import { bookingService, LiveLocation } from '../services/bookingService';
+import { bookingService, BookingReview, LiveLocation } from '../services/bookingService';
+import toast from 'react-hot-toast';
 
 interface BookingRowProps {
   booking: Booking;
@@ -50,6 +52,13 @@ export const BookingRow: React.FC<BookingRowProps> = ({
   const [liveLocation, setLiveLocation] = useState<LiveLocation | null>(null);
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const [customerLocation, setCustomerLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [arrivalCode, setArrivalCode] = useState<string | null>(null);
+  const [arrivalCodeInput, setArrivalCodeInput] = useState('');
+  const [isArrivalVerified, setIsArrivalVerified] = useState(Boolean(booking.arrivalOtpVerifiedAt));
+  const [review, setReview] = useState<BookingReview | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const locationWatchRef = useRef<number | null>(null);
 
   // Normalize worker object
@@ -140,6 +149,49 @@ export const BookingRow: React.FC<BookingRowProps> = ({
       if (intervalId) window.clearInterval(intervalId);
     };
   }, [bookingId, isTrackingLocation, isWorkerDashboard, normalizedStatus]);
+
+  useEffect(() => {
+    if (isWorkerDashboard || normalizedStatus !== 'completed' || !bookingId) return;
+    let isMounted = true;
+    bookingService.getBookingReview(bookingId)
+      .then((value) => { if (isMounted) setReview(value); })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, [bookingId, isWorkerDashboard, normalizedStatus]);
+
+  const handleCreateArrivalCode = async () => {
+    try {
+      const result = await bookingService.issueArrivalCode(bookingId);
+      setArrivalCode(result.code);
+      toast.success('Show this code to your worker when they arrive.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not create arrival code');
+    }
+  };
+
+  const handleVerifyArrivalCode = async () => {
+    try {
+      await bookingService.verifyArrivalCode(bookingId, arrivalCodeInput.trim());
+      setIsArrivalVerified(true);
+      setArrivalCodeInput('');
+      toast.success('Customer arrival verified.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not verify arrival code');
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    setIsSubmittingReview(true);
+    try {
+      const savedReview = await bookingService.submitReview(bookingId, reviewRating, reviewComment);
+      setReview(savedReview);
+      toast.success('Thanks for your feedback.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not submit feedback');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   const startLocationSharing = () => {
     if (!bookingId) return;
@@ -408,6 +460,41 @@ export const BookingRow: React.FC<BookingRowProps> = ({
                 </button>
               )}
 
+              {!isWorkerDashboard && normalizedStatus === 'accepted' && !isArrivalVerified && (
+                <button
+                  type="button"
+                  onClick={handleCreateArrivalCode}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>{arrivalCode ? 'Refresh arrival code' : 'Get arrival code'}</span>
+                </button>
+              )}
+
+              {isWorkerDashboard && normalizedStatus === 'accepted' && !isArrivalVerified && (
+                <input
+                  aria-label="Customer arrival code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={arrivalCodeInput}
+                  onChange={(event) => setArrivalCodeInput(event.target.value.replace(/\D/g, ''))}
+                  onClick={() => setIsExpanded(true)}
+                  placeholder="Arrival code"
+                  className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+                />
+              )}
+
+              {isWorkerDashboard && normalizedStatus === 'accepted' && !isArrivalVerified && (
+                <button
+                  type="button"
+                  onClick={handleVerifyArrivalCode}
+                  disabled={arrivalCodeInput.length !== 6}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg disabled:opacity-50"
+                >
+                  Verify arrival
+                </button>
+              )}
+
               {!isWorkerDashboard && normalizedStatus === 'accepted' && (
                 <button
                   type="button"
@@ -453,6 +540,48 @@ export const BookingRow: React.FC<BookingRowProps> = ({
 
               {isWorkerDashboard && locationError && (
                 <p className="text-rose-600">{locationError}</p>
+              )}
+
+              {!isWorkerDashboard && arrivalCode && normalizedStatus === 'accepted' && (
+                <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs font-semibold text-emerald-900">Arrival code</p>
+                  <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-emerald-950">{arrivalCode}</p>
+                  <p className="mt-1 text-[11px] text-emerald-800">Share this code with your worker in person. It expires in four hours.</p>
+                </div>
+              )}
+
+              {isWorkerDashboard && normalizedStatus === 'accepted' && (
+                <p className="md:col-span-2 text-slate-600">
+                  Arrival check: {isArrivalVerified ? 'Customer verified' : 'Ask the customer for their 6-digit arrival code.'}
+                </p>
+              )}
+
+              {!isWorkerDashboard && normalizedStatus === 'completed' && (
+                <div className="md:col-span-2 rounded-lg border border-slate-200 bg-white p-3">
+                  {review ? (
+                    <div>
+                      <p className="flex items-center gap-1 text-sm font-semibold text-amber-700">
+                        <Star className="h-4 w-4 fill-current" /> {review.rating}/5
+                      </p>
+                      {review.comment && <p className="mt-1 text-slate-600">{review.comment}</p>}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-800">Rate this service</p>
+                      <div className="flex items-center gap-1" role="radiogroup" aria-label="Service rating">
+                        {[1, 2, 3, 4, 5].map((rating) => (
+                          <button key={rating} type="button" role="radio" aria-checked={reviewRating === rating} aria-label={`${rating} stars`} onClick={() => setReviewRating(rating)} className="p-1 text-amber-500">
+                            <Star className={`h-5 w-5 ${reviewRating >= rating ? 'fill-current' : ''}`} />
+                          </button>
+                        ))}
+                      </div>
+                      <textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} maxLength={1000} rows={2} placeholder="Share feedback about the service" className="w-full rounded-lg border border-slate-300 p-2 text-xs" />
+                      <button type="button" disabled={isSubmittingReview} onClick={handleSubmitReview} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                        {isSubmittingReview ? 'Submitting...' : 'Submit feedback'}
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {!isWorkerDashboard && normalizedStatus === 'accepted' && liveLocation?.isSharing && liveLocation.latitude !== null && liveLocation.longitude !== null && (

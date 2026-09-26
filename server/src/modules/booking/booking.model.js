@@ -77,6 +77,11 @@ const bookingSchema = new mongoose.Schema(
             isSharing: { type: Boolean, default: false },
         },
 
+        arrivalOtpHash: { type: String, default: null, select: false },
+        arrivalOtpExpiresAt: { type: Date, default: null, select: false },
+        arrivalOtpAttempts: { type: Number, default: 0, select: false },
+        arrivalOtpVerifiedAt: { type: Date, default: null },
+
         status: {
             type: String,
             enum: [

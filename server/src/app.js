@@ -13,6 +13,7 @@ const adminRoutes = require("./modules/admin/admin.routes");
 const bookingRoutes = require("./modules/booking/booking.routes");
 const notificationRoutes = require("./modules/notification/notification.routes");
 const paymentRoutes = require("./modules/payment/payment.routes");
+const reviewRoutes = require("./modules/review/review.routes");
 const app = express();
 
 app.set("trust proxy", 1);
@@ -80,6 +81,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 app.use("/api/payments", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // =========================
 // Health Check

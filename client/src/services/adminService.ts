@@ -177,4 +177,13 @@ export const adminService = {
       );
     }
   },
+
+  async getReviewSummary(): Promise<{ count: number; averageRating: number; recent: any[] }> {
+    try {
+      const response = await api.get<ApiResponse<{ count: number; averageRating: number; recent: any[] }>>('/reviews/admin/summary');
+      return response.data.data || { count: 0, averageRating: 0, recent: [] };
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not fetch review summary'));
+    }
+  },
 };

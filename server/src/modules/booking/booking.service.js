@@ -2,6 +2,7 @@ const Booking = require("./booking.model");
 const Worker = require("../worker/worker.model");
 const Auth = require("../auth/auth.model");
 const notificationService = require("../notification/notification.service");
+const crypto = require("crypto");
 
 const createBooking = async (customerId, bookingData) => {
     const customer = await Auth.findById(customerId);
@@ -87,6 +88,7 @@ const getWorkerBookings = async (workerUserId) => {
     })
         .populate("customerId", "name email")
         .populate("workerId", "phone skills dailyWage")
+        .select("-arrivalOtpHash -arrivalOtpExpiresAt")
         .sort({ createdAt: -1 });
 
     return bookings;
@@ -116,6 +118,9 @@ const acceptBooking = async (workerUserId, bookingId) => {
     }
 
     booking.status = "accepted";
+    booking.arrivalOtpVerifiedAt = null;
+    booking.arrivalOtpHash = null;
+    booking.arrivalOtpExpiresAt = null;
 
     await booking.save();
 
@@ -178,6 +183,7 @@ const getMyBookings = async (customerId) => {
     })
         .populate("workerId", "phone skills dailyWage userId")
         .populate("customerId", "name email")
+        .select("-arrivalOtpHash -arrivalOtpExpiresAt")
         .sort({ createdAt: -1 });
 
     return bookings;
@@ -204,6 +210,10 @@ const completeBooking = async (workerUserId, bookingId) => {
 
     if (booking.status !== "accepted") {
         throw new Error("Only accepted bookings can be completed");
+    }
+
+    if (!booking.arrivalOtpVerifiedAt) {
+        throw new Error("Verify the customer's arrival code before completing this booking");
     }
 
     booking.status = "completed";
@@ -313,6 +323,68 @@ const getLiveLocation = async (customerId, bookingId) => {
     return booking.liveLocation;
 };
 
+const issueArrivalCode = async (customerId, bookingId) => {
+    const booking = await Booking.findOne({ _id: bookingId, customerId });
+
+    if (!booking) {
+        throw new Error("Booking not found");
+    }
+    if (booking.status !== "accepted") {
+        throw new Error("Arrival codes are available for accepted bookings only");
+    }
+    if (booking.arrivalOtpVerifiedAt) {
+        throw new Error("Arrival has already been verified");
+    }
+
+    const code = crypto.randomInt(100000, 1000000).toString();
+    booking.arrivalOtpHash = crypto.createHash("sha256").update(code).digest("hex");
+    booking.arrivalOtpExpiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+    booking.arrivalOtpAttempts = 0;
+    await booking.save();
+
+    return { code, expiresAt: booking.arrivalOtpExpiresAt };
+};
+
+const verifyArrivalCode = async (workerUserId, bookingId, code) => {
+    const worker = await Worker.findOne({ userId: workerUserId });
+    const booking = await Booking.findById(bookingId).select("+arrivalOtpHash +arrivalOtpExpiresAt +arrivalOtpAttempts");
+
+    if (!worker || !booking || booking.workerId.toString() !== worker._id.toString()) {
+        throw new Error("You are not authorized to verify this booking's arrival code");
+    }
+    if (booking.status !== "accepted") {
+        throw new Error("Arrival can only be verified for accepted bookings");
+    }
+    if (!/^\d{6}$/.test(String(code || ""))) {
+        throw new Error("Enter the 6-digit arrival code");
+    }
+    if (!booking.arrivalOtpHash || !booking.arrivalOtpExpiresAt || booking.arrivalOtpExpiresAt <= new Date()) {
+        throw new Error("Arrival code is missing or expired. Ask the customer to generate a new code");
+    }
+    if (booking.arrivalOtpAttempts >= 5) {
+        throw new Error("Too many incorrect attempts. Ask the customer to generate a new code");
+    }
+
+    const submittedHash = crypto.createHash("sha256").update(String(code)).digest();
+    const storedHash = Buffer.from(booking.arrivalOtpHash, "hex");
+    if (submittedHash.length !== storedHash.length || !crypto.timingSafeEqual(submittedHash, storedHash)) {
+        booking.arrivalOtpAttempts += 1;
+        if (booking.arrivalOtpAttempts >= 5) {
+            booking.arrivalOtpHash = null;
+            booking.arrivalOtpExpiresAt = null;
+        }
+        await booking.save();
+        throw new Error("Incorrect arrival code");
+    }
+
+    booking.arrivalOtpVerifiedAt = new Date();
+    booking.arrivalOtpHash = null;
+    booking.arrivalOtpExpiresAt = null;
+    booking.arrivalOtpAttempts = 0;
+    await booking.save();
+    return booking;
+};
+
 module.exports = {
     createBooking,
     getWorkerBookings,
@@ -323,4 +395,6 @@ module.exports = {
     cancelBooking,
     updateLiveLocation,
     getLiveLocation,
+    issueArrivalCode,
+    verifyArrivalCode,
 };

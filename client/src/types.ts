@@ -78,6 +78,7 @@ export interface Booking {
     updatedAt: string | null;
     isSharing: boolean;
   };
+  arrivalOtpVerifiedAt?: string | null;
   status: BookingStatus;
   createdAt?: string;
   updatedAt?: string;

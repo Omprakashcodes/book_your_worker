@@ -35,6 +35,13 @@ export interface LiveLocation {
   isSharing: boolean;
 }
 
+export interface BookingReview {
+  _id: string;
+  rating: number;
+  comment: string;
+  createdAt?: string;
+}
+
 export const bookingService = {
   /**
    * POST /api/bookings/ - Create customer booking for an approved worker
@@ -102,6 +109,50 @@ export const bookingService = {
       return response.data.data as LiveLocation;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Could not load live location'));
+    }
+  },
+
+  async issueArrivalCode(bookingId: string): Promise<{ code: string; expiresAt: string }> {
+    try {
+      const response = await api.post<ApiResponse<{ code: string; expiresAt: string }>>(
+        `/bookings/${bookingId}/arrival-code`
+      );
+      return response.data.data as { code: string; expiresAt: string };
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not create arrival code'));
+    }
+  },
+
+  async verifyArrivalCode(bookingId: string, code: string): Promise<Booking> {
+    try {
+      const response = await api.post<ApiResponse<Booking>>(
+        `/bookings/${bookingId}/verify-arrival`,
+        { code }
+      );
+      return response.data.data as Booking;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not verify arrival code'));
+    }
+  },
+
+  async getBookingReview(bookingId: string): Promise<BookingReview | null> {
+    try {
+      const response = await api.get<ApiResponse<BookingReview | null>>(`/reviews/bookings/${bookingId}`);
+      return response.data.data || null;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not load feedback'));
+    }
+  },
+
+  async submitReview(bookingId: string, rating: number, comment: string): Promise<BookingReview> {
+    try {
+      const response = await api.post<ApiResponse<BookingReview>>(`/reviews/bookings/${bookingId}`, {
+        rating,
+        comment,
+      });
+      return response.data.data as BookingReview;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not submit feedback'));
     }
   },
 

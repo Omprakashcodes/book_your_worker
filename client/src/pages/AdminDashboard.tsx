@@ -11,6 +11,7 @@ import {
   ArrowRight,
   RefreshCw,
   FileCheck,
+  Star,
 } from 'lucide-react';
 import { ErrorState } from '../components/ErrorState';
 
@@ -18,14 +19,19 @@ export const AdminDashboard: React.FC = () => {
   const [workers, setWorkers] = useState<WorkerProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<{ count: number; averageRating: number; recent: any[] }>({ count: 0, averageRating: 0, recent: [] });
 
   const fetchWorkers = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await adminService.getAllWorkers();
+      const [data, reviews] = await Promise.all([
+        adminService.getAllWorkers(),
+        adminService.getReviewSummary(),
+      ]);
       setWorkers(data);
+      setReviewSummary(reviews);
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -277,6 +283,41 @@ export const AdminDashboard: React.FC = () => {
             </Link>
           </div>
         </div>
+
+        <section aria-labelledby="feedback-heading" className="border-t border-slate-200 pt-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 id="feedback-heading" className="text-lg font-bold text-slate-900 font-heading">Customer feedback</h2>
+              <p className="mt-1 text-xs text-slate-500">Ratings submitted for completed bookings.</p>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-amber-700" aria-label={`${reviewSummary.averageRating.toFixed(1)} average rating from ${reviewSummary.count} reviews`}>
+              <Star className="h-4 w-4 fill-current" />
+              <span>{reviewSummary.averageRating.toFixed(1)} average</span>
+              <span className="font-normal text-slate-500">({reviewSummary.count})</span>
+            </div>
+          </div>
+          {reviewSummary.recent.length === 0 ? (
+            <p className="mt-4 border-y border-slate-200 py-4 text-sm text-slate-500">No customer feedback yet.</p>
+          ) : (
+            <div className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+              {reviewSummary.recent.map((review) => (
+                <article key={review._id} className="grid grid-cols-1 gap-2 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {review.workerId?.userId?.name || 'Worker'}
+                      <span className="font-normal text-slate-500"> · {review.customerId?.name || 'Customer'}</span>
+                    </p>
+                    {review.comment && <p className="mt-1 text-sm text-slate-600">{review.comment}</p>}
+                    <p className="mt-1 text-[11px] text-slate-400">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ''}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-amber-700">
+                    <Star className="h-4 w-4 fill-current" /> {review.rating}/5
+                  </span>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Empty State */}
         {!isLoading && !error && totalWorkers === 0 && (

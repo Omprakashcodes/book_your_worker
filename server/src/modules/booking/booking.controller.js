@@ -157,6 +157,28 @@ const getLiveLocation = async (req, res) => {
         return res.status(400).json({ success: false, message: error.message });
     }
 };
+
+const issueArrivalCode = async (req, res) => {
+    try {
+        const result = await bookingService.issueArrivalCode(req.user.userId, req.params.id);
+        return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+const verifyArrivalCode = async (req, res) => {
+    try {
+        const booking = await bookingService.verifyArrivalCode(
+            req.user.userId,
+            req.params.id,
+            req.body.code
+        );
+        return res.status(200).json({ success: true, data: booking });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
 module.exports = {
     createBooking,
     getWorkerBookings,
@@ -167,4 +189,6 @@ module.exports = {
     cancelBooking,
     updateLiveLocation,
     getLiveLocation,
+    issueArrivalCode,
+    verifyArrivalCode,
 };

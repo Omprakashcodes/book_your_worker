@@ -10,6 +10,8 @@ const {
     cancelBooking,
     updateLiveLocation,
     getLiveLocation,
+    issueArrivalCode,
+    verifyArrivalCode,
 } = require("./booking.controller");
 
 const authMiddleware = require("../../middleware/auth.middleware");
@@ -62,4 +64,6 @@ router.get(
     authMiddleware,
     getLiveLocation
 );
+router.post("/:id/arrival-code", authMiddleware, issueArrivalCode);
+router.post("/:id/verify-arrival", authMiddleware, verifyArrivalCode);
 module.exports = router;
