@@ -19,7 +19,7 @@ const getRatingSummaries = async (workerIds) => {
 };
 
 const toPublicWorker = (worker) => {
-    const { aadhaarDocument, panDocument, ...publicWorker } = worker;
+    const { aadhaarDocument, panDocument, serviceLocation, ...publicWorker } = worker;
     return publicWorker;
 };
 
@@ -42,6 +42,7 @@ const createOrUpdateWorkerProfile = async (userId, workerData) => {
         address,
         city,
         state,
+        serviceLocation,
         dailyWage,
     } = workerData;
 
@@ -55,6 +56,7 @@ const createOrUpdateWorkerProfile = async (userId, workerData) => {
             address,
             city,
             state,
+            serviceLocation,
             dailyWage,
         },
         {

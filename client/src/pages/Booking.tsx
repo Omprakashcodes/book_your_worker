@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { WorkerProfile } from '../types';
+import { ServiceLocation, WorkerProfile } from '../types';
 import { workerService } from '../services/workerService';
 import { bookingService } from '../services/bookingService';
 import {
@@ -70,6 +70,9 @@ export const Booking: React.FC = () => {
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
   const [problemPhotos, setProblemPhotos] = useState<File[]>([]);
+  const [customerLocation, setCustomerLocation] = useState<ServiceLocation | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // Submit states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,6 +109,31 @@ export const Booking: React.FC = () => {
     setDate(`${yyyy}-${mm}-${dd}`);
   }, [id]);
 
+  const captureCustomerLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('This browser does not support location access.');
+      return;
+    }
+
+    setLocationError(null);
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setCustomerLocation({ latitude: coords.latitude, longitude: coords.longitude });
+        setIsGettingLocation(false);
+        setValidationError(null);
+        setLocationError(null);
+      },
+      (locationError) => {
+        setIsGettingLocation(false);
+        setLocationError(locationError.code === locationError.PERMISSION_DENIED
+          ? 'Allow location access in your browser to check which workers are within 50 km.'
+          : 'Could not get your location. Check device location settings and try again.');
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
@@ -126,6 +154,11 @@ export const Booking: React.FC = () => {
       setValidationError('Please provide a complete service address (house/flat no, street, city).');
       return;
     }
+    if (!customerLocation) {
+      setValidationError('Share your current location to check the 50 km booking area.');
+      setLocationError('Use the location button below before confirming your booking.');
+      return;
+    }
 
     if (!worker) return;
 
@@ -142,6 +175,8 @@ export const Booking: React.FC = () => {
         address: address.trim(),
         description: description.trim() || undefined,
         amount: Number(worker.dailyWage) || 750,
+        customerLatitude: customerLocation.latitude,
+        customerLongitude: customerLocation.longitude,
       }, problemPhotos);
 
       const bookingId = booking._id || booking.id;
@@ -353,6 +388,28 @@ export const Booking: React.FC = () => {
                     placeholder="House / Flat No., Apartment Name, Street, Landmark, Area, City"
                     className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-600 focus:outline-hidden transition-colors resize-none"
                   />
+                </div>
+
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Check the 50 km service radius</p>
+                      <p className="mt-1 text-xs text-slate-600">We use your current location to prevent booking a worker too far away.</p>
+                      <p className={`mt-1 text-xs font-medium ${customerLocation ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {customerLocation ? 'Current location ready' : 'Required before confirming this booking'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={captureCustomerLocation}
+                      disabled={isGettingLocation}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      {isGettingLocation ? 'Getting location...' : customerLocation ? 'Refresh my location' : 'Use my current location'}
+                    </button>
+                  </div>
+                  {locationError && <p role="alert" className="mt-2 text-xs font-medium text-rose-700">{locationError}</p>}
                 </div>
               </div>
 

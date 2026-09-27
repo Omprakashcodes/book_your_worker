@@ -1,5 +1,5 @@
 import api, { getErrorMessage } from './api';
-import { WorkerProfile, ApiResponse } from '../types';
+import { WorkerProfile, ApiResponse, ServiceLocation } from '../types';
 
 export interface UpdateWorkerProfilePayload {
   phone: string;
@@ -9,6 +9,7 @@ export interface UpdateWorkerProfilePayload {
   address: string;
   city: string;
   state: string;
+  serviceLocation: ServiceLocation;
   dailyWage: number;
 }
 

@@ -25,6 +25,11 @@ export interface WorkerReview {
   bookingId?: { service?: string } | null;
 }
 
+export interface ServiceLocation {
+  latitude: number;
+  longitude: number;
+}
+
 export interface WorkerProfile {
   _id: string;
   id?: string;
@@ -38,6 +43,7 @@ export interface WorkerProfile {
   address: string;
   city: string;
   state: string;
+  serviceLocation?: ServiceLocation;
   dailyWage: number;
   aadhaarDocument?: string;
   panDocument?: string;

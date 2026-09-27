@@ -9,6 +9,20 @@ const {
     getAuthenticatedEvidence,
 } = require("../../middleware/evidence-upload.middleware");
 
+const MAX_BOOKING_DISTANCE_KM = 50;
+
+const getDistanceInKm = (first, second) => {
+    const toRadians = (degrees) => degrees * Math.PI / 180;
+    const latitudeDelta = toRadians(second.latitude - first.latitude);
+    const longitudeDelta = toRadians(second.longitude - first.longitude);
+    const firstLatitude = toRadians(first.latitude);
+    const secondLatitude = toRadians(second.latitude);
+    const haversine = Math.sin(latitudeDelta / 2) ** 2 +
+        Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+    const normalizedHaversine = Math.min(1, Math.max(0, haversine));
+    return 6371 * 2 * Math.atan2(Math.sqrt(normalizedHaversine), Math.sqrt(1 - normalizedHaversine));
+};
+
 const createBooking = async (customerId, bookingData, problemPhotos = []) => {
     const customer = await Auth.findById(customerId);
 
@@ -27,6 +41,8 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
         bookingTime,
         address,
         description,
+        customerLatitude,
+        customerLongitude,
     } = bookingData;
 
     const worker = await Worker.findById(workerId);
@@ -37,6 +53,23 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
 
     if (worker.verificationStatus !== "approved") {
         throw new Error("Worker is not approved");
+    }
+
+    const customerLocation = {
+        latitude: Number(customerLatitude),
+        longitude: Number(customerLongitude),
+    };
+    if (!Number.isFinite(customerLocation.latitude) || customerLocation.latitude < -90 || customerLocation.latitude > 90 ||
+        !Number.isFinite(customerLocation.longitude) || customerLocation.longitude < -180 || customerLocation.longitude > 180) {
+        throw new Error("Share your current location to check the 50 km booking area");
+    }
+    if (!Number.isFinite(worker.serviceLocation?.latitude) || !Number.isFinite(worker.serviceLocation?.longitude)) {
+        throw new Error("This worker has not set a service location yet. Please choose another worker or ask them to update their profile");
+    }
+
+    const distance = getDistanceInKm(customerLocation, worker.serviceLocation);
+    if (distance > MAX_BOOKING_DISTANCE_KM) {
+        throw new Error(`This worker is about ${Math.round(distance)} km away. You can only book workers within 50 km`);
     }
 
     if (

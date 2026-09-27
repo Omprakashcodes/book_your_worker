@@ -8,6 +8,8 @@ export interface CreateBookingPayload {
   bookingTime: string;
   address: string;
   amount: number;
+  customerLatitude: number;
+  customerLongitude: number;
   description?: string;
   // Backwards compat fields if needed:
   date?: string;
@@ -63,6 +65,8 @@ export const bookingService = {
       body.append('bookingTime', payload.bookingTime || payload.time || '');
       body.append('address', payload.address);
       body.append('amount', String(payload.amount));
+      body.append('customerLatitude', String(payload.customerLatitude));
+      body.append('customerLongitude', String(payload.customerLongitude));
       if (payload.description) body.append('description', payload.description);
       problemPhotos.forEach((photo) => body.append('problemPhotos', photo));
 

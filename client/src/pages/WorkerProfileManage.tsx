@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { WorkerProfile } from '../types';
+import { ServiceLocation, WorkerProfile } from '../types';
 import { workerService } from '../services/workerService';
 import { getImageUrl, formatDate, formatCurrency } from '../utils/formatters';
 import {
@@ -52,6 +52,8 @@ export const WorkerProfileManage: React.FC = () => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
+  const [serviceLocation, setServiceLocation] = useState<ServiceLocation | null>(null);
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [dailyWage, setDailyWage] = useState<number>(750);
 
   // Document upload files
@@ -72,6 +74,7 @@ export const WorkerProfileManage: React.FC = () => {
         setAddress(data.address || '');
         setCity(data.city || '');
         setState(data.state || '');
+        setServiceLocation(data.serviceLocation || null);
         setDailyWage(Number(data.dailyWage) || 500);
       }
     } catch (err: unknown) {
@@ -97,6 +100,29 @@ export const WorkerProfileManage: React.FC = () => {
     setSkills(skills.filter((s) => s !== skillToRemove));
   };
 
+  const captureServiceLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('This browser does not support location access.');
+      return;
+    }
+
+    setIsCapturingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setServiceLocation({ latitude: coords.latitude, longitude: coords.longitude });
+        setIsCapturingLocation(false);
+        toast.success('Service location captured. Save your profile to update it.');
+      },
+      (locationError) => {
+        setIsCapturingLocation(false);
+        toast.error(locationError.code === locationError.PERMISSION_DENIED
+          ? 'Allow location access in your browser to set your service area.'
+          : 'Could not get your location. Try again outdoors or check device location settings.');
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
+    );
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -116,6 +142,10 @@ export const WorkerProfileManage: React.FC = () => {
       toast.error('Please complete your address, city, and state details.');
       return;
     }
+    if (!serviceLocation) {
+      toast.error('Set your current service location to receive bookings within 50 km.');
+      return;
+    }
     if (dailyWage <= 0) {
       toast.error('Daily wage must be greater than 0.');
       return;
@@ -131,6 +161,7 @@ export const WorkerProfileManage: React.FC = () => {
         address: address.trim(),
         city: city.trim(),
         state: state.trim(),
+        serviceLocation,
         dailyWage: Number(dailyWage),
       });
 
@@ -468,6 +499,27 @@ export const WorkerProfileManage: React.FC = () => {
                   className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-600 focus:outline-hidden transition-colors resize-none"
                 />
               </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">50 km service radius</p>
+                      <p className="mt-1 text-xs text-slate-500">Set your service base location so customers nearby can book you.</p>
+                      <p className={`mt-1 text-xs font-medium ${serviceLocation ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {serviceLocation ? 'Service location captured' : 'Location required before saving your profile'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={captureServiceLocation}
+                      disabled={isCapturingLocation}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      {isCapturingLocation ? 'Getting location...' : serviceLocation ? 'Update service location' : 'Use current location'}
+                    </button>
+                  </div>
+                </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex justify-end">
