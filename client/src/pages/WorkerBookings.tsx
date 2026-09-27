@@ -7,6 +7,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Briefcase, RefreshCw } from 'lucide-react';
+import { formatCurrency } from '../utils/formatters';
 import toast from 'react-hot-toast';
 
 type FilterTab = 'all' | 'pending' | 'accepted' | 'completed' | 'rejected';
@@ -19,7 +20,7 @@ export const WorkerBookings: React.FC = () => {
 
   // Active action modal
   const [pendingAction, setPendingAction] = useState<{
-    type: 'accept' | 'reject' | 'complete';
+    type: 'accept' | 'reject' | 'complete' | 'cash-payment';
     booking: Booking;
   } | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -71,6 +72,14 @@ export const WorkerBookings: React.FC = () => {
         setBookings((prev) =>
           prev.map((b) =>
             b._id === bookingId || b.id === bookingId ? { ...b, status: 'completed' } : b
+          )
+        );
+      } else if (type === 'cash-payment') {
+        await bookingService.confirmCashPayment(bookingId);
+        toast.success('Cash payment confirmed as received.');
+        setBookings((prev) =>
+          prev.map((b) =>
+            b._id === bookingId || b.id === bookingId ? { ...b, paymentStatus: 'paid' } : b
           )
         );
       }
@@ -209,6 +218,7 @@ export const WorkerBookings: React.FC = () => {
                   onAcceptClick={(b) => setPendingAction({ type: 'accept', booking: b })}
                   onRejectClick={(b) => setPendingAction({ type: 'reject', booking: b })}
                   onCompleteClick={(b) => setPendingAction({ type: 'complete', booking: b })}
+                  onConfirmCashPayment={(b) => setPendingAction({ type: 'cash-payment', booking: b })}
                 />
               ))}
             </div>
@@ -225,6 +235,8 @@ export const WorkerBookings: React.FC = () => {
               ? 'Accept Service Job?'
               : pendingAction.type === 'reject'
               ? 'Decline Service Job?'
+              : pendingAction.type === 'cash-payment'
+              ? 'Confirm Cash Received?'
               : 'Complete Service Job?'
           }
           message={
@@ -232,6 +244,8 @@ export const WorkerBookings: React.FC = () => {
               ? `Confirm acceptance of job #${pendingAction.booking._id?.slice(-8) || pendingAction.booking.id?.slice(-8)} for ${pendingAction.booking.service}. Customer will be notified.`
               : pendingAction.type === 'reject'
               ? `Are you sure you want to decline job #${pendingAction.booking._id?.slice(-8) || pendingAction.booking.id?.slice(-8)}? The customer will receive an alert to choose another professional.`
+              : pendingAction.type === 'cash-payment'
+              ? `Confirm that you received ${formatCurrency(pendingAction.booking.amount)} in cash from the customer for this completed service.`
               : `Confirm that you have completed this service request for the customer.`
           }
           confirmLabel={
@@ -239,6 +253,8 @@ export const WorkerBookings: React.FC = () => {
               ? 'Accept Job'
               : pendingAction.type === 'reject'
               ? 'Decline Job'
+              : pendingAction.type === 'cash-payment'
+              ? 'Confirm Cash Received'
               : 'Mark Complete'
           }
           cancelLabel="Cancel"

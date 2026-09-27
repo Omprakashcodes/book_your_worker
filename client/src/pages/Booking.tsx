@@ -71,6 +71,7 @@ export const Booking: React.FC = () => {
   const [description, setDescription] = useState('');
   const [problemPhotos, setProblemPhotos] = useState<File[]>([]);
   const [isUrgent, setIsUrgent] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash'>('online');
   const [customerLocation, setCustomerLocation] = useState<ServiceLocation | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -179,11 +180,18 @@ export const Booking: React.FC = () => {
         customerLatitude: customerLocation.latitude,
         customerLongitude: customerLocation.longitude,
         isUrgent,
+        paymentMethod,
       }, problemPhotos);
 
       const bookingId = booking._id || booking.id;
       if (!bookingId) {
         throw new Error('Booking was created without an ID');
+      }
+
+      if (paymentMethod === 'cash') {
+        toast.success('Booking requested. Pay cash to the worker after the service is completed.');
+        navigate('/my-bookings');
+        return;
       }
 
       const order = await bookingService.createPaymentOrder(bookingId);
@@ -552,6 +560,40 @@ export const Booking: React.FC = () => {
                   </span>
                 </label>
 
+                <fieldset className="mb-4">
+                  <legend className="mb-2 text-sm font-semibold text-slate-900">Payment method</legend>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 transition-colors ${paymentMethod === 'online' ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="online"
+                        checked={paymentMethod === 'online'}
+                        onChange={() => setPaymentMethod('online')}
+                        className="mt-0.5 h-4 w-4 accent-indigo-600"
+                      />
+                      <span>
+                        <span className="block text-xs font-semibold text-slate-900">Pay online</span>
+                        <span className="mt-0.5 block text-[11px] text-slate-500">Secure Razorpay checkout</span>
+                      </span>
+                    </label>
+                    <label className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 transition-colors ${paymentMethod === 'cash' ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="cash"
+                        checked={paymentMethod === 'cash'}
+                        onChange={() => setPaymentMethod('cash')}
+                        className="mt-0.5 h-4 w-4 accent-emerald-600"
+                      />
+                      <span>
+                        <span className="block text-xs font-semibold text-slate-900">Cash on completion</span>
+                        <span className="mt-0.5 block text-[11px] text-slate-500">Pay the worker after the service</span>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+
                 {/* Price Breakdown */}
                 <div className="space-y-3 text-sm border-t border-slate-100 pt-4">
                   <div className="flex justify-between text-slate-600">
@@ -587,7 +629,7 @@ export const Booking: React.FC = () => {
                         {formatCurrency(estimatedTotal)}
                       </span>
                       <span className="block text-[11px] text-slate-400">
-                        Pay directly upon job satisfaction
+                        {paymentMethod === 'cash' ? 'Pay cash to the worker after service' : 'Continue to secure online payment'}
                       </span>
                     </div>
                   </div>
@@ -603,12 +645,12 @@ export const Booking: React.FC = () => {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Starting Secure Checkout...</span>
+                        <span>{paymentMethod === 'cash' ? 'Sending Booking Request...' : 'Starting Secure Checkout...'}</span>
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Confirm & Request Booking</span>
+                        <span>{paymentMethod === 'cash' ? 'Request Booking · Pay Cash Later' : 'Confirm & Pay Online'}</span>
                       </>
                     )}
                   </button>
@@ -616,7 +658,7 @@ export const Booking: React.FC = () => {
 
                 <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate-400">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Verified tradesperson • Secure Razorpay checkout</span>
+                  <span>{paymentMethod === 'cash' ? 'Pay the worker directly after service completion' : 'Verified tradesperson • Secure Razorpay checkout'}</span>
                 </div>
               </div>
             </div>

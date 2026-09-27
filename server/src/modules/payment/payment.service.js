@@ -23,6 +23,10 @@ const createOrder = async (customerId, bookingId) => {
         throw new Error("Booking not found");
     }
 
+    if (booking.paymentMethod === "cash") {
+        throw new Error("This booking is set to cash payment after service");
+    }
+
     if (!["pending", "created"].includes(booking.paymentStatus)) {
         throw new Error("This booking is not available for payment");
     }
@@ -61,6 +65,10 @@ const verifyPayment = async (customerId, bookingId, paymentData) => {
 
     if (!booking) {
         throw new Error("Booking not found");
+    }
+
+    if (booking.paymentMethod === "cash") {
+        throw new Error("Cash bookings cannot be verified as online payments");
     }
 
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {

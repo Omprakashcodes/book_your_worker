@@ -14,7 +14,8 @@ export interface Notification {
     | 'booking_accepted'
     | 'booking_rejected'
     | 'booking_completed'
-    | 'booking_cancelled';
+    | 'booking_cancelled'
+    | 'payment_received';
   isRead: boolean;
   relatedId?: string | null;
   createdAt: string;

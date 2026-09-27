@@ -10,6 +10,7 @@ import {
   FileCheck2,
   ShieldAlert,
   Wrench,
+  Banknote,
 } from 'lucide-react';
 import {
   notificationService,
@@ -162,6 +163,9 @@ export const NotificationBell: React.FC = () => {
       case 'booking_completed':
         return <CheckCircle2 className="w-4 h-4" />;
 
+      case 'payment_received':
+        return <Banknote className="w-4 h-4" />;
+
       default:
         return <Info className="w-4 h-4" />;
     }
@@ -177,6 +181,7 @@ export const NotificationBell: React.FC = () => {
       case 'kyc_approved':
       case 'booking_accepted':
       case 'booking_completed':
+      case 'payment_received':
         return 'bg-emerald-50 text-emerald-600';
 
       case 'kyc_submitted':

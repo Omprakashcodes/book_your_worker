@@ -213,6 +213,18 @@ const addProblemPhotos = async (req, res) => {
     }
 };
 
+const confirmCashPayment = async (req, res) => {
+    try {
+        const booking = await bookingService.confirmCashPayment(
+            req.user.userId,
+            req.params.id
+        );
+        return res.status(200).json({ success: true, data: booking });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
 const getEvidenceFile = async (req, res) => {
     try {
         const evidence = await bookingService.getEvidenceFile(
@@ -243,5 +255,6 @@ module.exports = {
     verifyArrivalCode,
     addSolutionPhotos,
     addProblemPhotos,
+    confirmCashPayment,
     getEvidenceFile,
 };

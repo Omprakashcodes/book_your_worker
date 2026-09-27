@@ -24,6 +24,7 @@ import {
   Navigation,
   Star,
   Zap,
+  Banknote,
 } from 'lucide-react';
 import { bookingService, BookingReview, LiveLocation } from '../services/bookingService';
 import { BookingEvidenceGallery } from './BookingEvidenceGallery';
@@ -37,6 +38,7 @@ interface BookingRowProps {
   onAcceptClick?: (booking: Booking) => void;
   onRejectClick?: (booking: Booking) => void;
   onCompleteClick?: (booking: Booking) => void;
+  onConfirmCashPayment?: (booking: Booking) => void;
   isActionLoading?: boolean;
 }
 
@@ -47,6 +49,7 @@ export const BookingRow: React.FC<BookingRowProps> = ({
   onAcceptClick,
   onRejectClick,
   onCompleteClick,
+  onConfirmCashPayment,
   isActionLoading = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -451,6 +454,11 @@ export const BookingRow: React.FC<BookingRowProps> = ({
                   Includes {formatCurrency(booking.urgencyFee)} urgent fee
                 </span>
               ) : null}
+              <span className={`mt-0.5 block text-[10px] font-medium ${booking.paymentStatus === 'paid' ? 'text-emerald-700' : booking.paymentMethod === 'cash' ? 'text-amber-700' : 'text-slate-500'}`}>
+                {booking.paymentMethod === 'cash'
+                  ? booking.paymentStatus === 'paid' ? 'Cash received' : 'Cash due after service'
+                  : booking.paymentStatus === 'paid' ? 'Paid online' : 'Online payment'}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -514,6 +522,18 @@ export const BookingRow: React.FC<BookingRowProps> = ({
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
                   <span>Complete</span>
+                </button>
+              )}
+
+              {isWorkerDashboard && normalizedStatus === 'completed' && booking.paymentMethod === 'cash' && booking.paymentStatus !== 'paid' && onConfirmCashPayment && (
+                <button
+                  type="button"
+                  disabled={isActionLoading}
+                  onClick={() => onConfirmCashPayment(booking)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                >
+                  <Banknote className="h-3.5 w-3.5" />
+                  Confirm cash received
                 </button>
               )}
 

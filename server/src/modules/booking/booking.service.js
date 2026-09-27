@@ -45,8 +45,14 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
         customerLatitude,
         customerLongitude,
         isUrgent: urgentValue,
+        paymentMethod: requestedPaymentMethod,
     } = bookingData;
     const isUrgent = urgentValue === true || urgentValue === "true";
+    const paymentMethod = requestedPaymentMethod || "online";
+
+    if (!["online", "cash"].includes(paymentMethod)) {
+        throw new Error("Choose online payment or cash after service");
+    }
 
     const worker = await Worker.findById(workerId);
 
@@ -109,6 +115,7 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
             urgencyFee,
             isUrgent,
             amount,
+            paymentMethod,
             status: "pending",
         });
     } catch (error) {
@@ -493,6 +500,37 @@ const addProblemPhotos = async (customerId, bookingId, photoFiles) => {
     return booking.problemPhotos;
 };
 
+const confirmCashPayment = async (workerUserId, bookingId) => {
+    const worker = await Worker.findOne({ userId: workerUserId });
+    const booking = await Booking.findById(bookingId);
+
+    if (!worker || !booking || booking.workerId.toString() !== worker._id.toString()) {
+        throw new Error("You are not authorized to confirm payment for this booking");
+    }
+    if (booking.paymentMethod !== "cash") {
+        throw new Error("Only cash bookings can be confirmed as cash paid");
+    }
+    if (booking.status !== "completed") {
+        throw new Error("Cash can only be confirmed after the service is completed");
+    }
+    if (booking.paymentStatus === "paid") {
+        return booking;
+    }
+
+    booking.paymentStatus = "paid";
+    await booking.save();
+
+    await notificationService.createNotification({
+        userId: booking.customerId,
+        title: "Cash Payment Received",
+        message: `The worker confirmed receiving ${booking.amount} in cash for your ${booking.service} booking.`,
+        type: "payment_received",
+        relatedId: booking._id,
+    });
+
+    return booking;
+};
+
 const getEvidenceFile = async (userId, bookingId, kind, filename) => {
     if (!["problem", "solution"].includes(kind) || !/^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i.test(filename)) {
         throw new Error("Evidence file not found");
@@ -536,5 +574,6 @@ module.exports = {
     verifyArrivalCode,
     addSolutionPhotos,
     addProblemPhotos,
+    confirmCashPayment,
     getEvidenceFile,
 };

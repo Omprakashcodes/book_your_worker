@@ -14,6 +14,7 @@ const {
     verifyArrivalCode,
     addSolutionPhotos,
     addProblemPhotos,
+    confirmCashPayment,
     getEvidenceFile,
 } = require("./booking.controller");
 
@@ -73,5 +74,6 @@ router.post("/:id/arrival-code", authMiddleware, issueArrivalCode);
 router.post("/:id/verify-arrival", authMiddleware, verifyArrivalCode);
 router.post("/:id/problem-photos", authMiddleware, evidenceUpload.uploadPhotos("problemPhotos"), addProblemPhotos);
 router.post("/:id/solution-photos", authMiddleware, evidenceUpload.uploadPhotos("solutionPhotos"), addSolutionPhotos);
+router.patch("/:id/cash-payment", authMiddleware, confirmCashPayment);
 router.get("/:id/evidence/:kind/:filename", authMiddleware, getEvidenceFile);
 module.exports = router;

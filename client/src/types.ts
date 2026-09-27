@@ -90,6 +90,7 @@ export interface Booking {
   baseAmount?: number | null;
   urgencyFee?: number;
   isUrgent?: boolean;
+  paymentMethod?: 'online' | 'cash';
   paymentStatus?: 'pending' | 'created' | 'paid' | 'failed' | 'refunded';
   razorpayOrderId?: string;
   razorpayPaymentId?: string;

@@ -11,6 +11,7 @@ export interface CreateBookingPayload {
   customerLatitude: number;
   customerLongitude: number;
   isUrgent?: boolean;
+  paymentMethod: 'online' | 'cash';
   description?: string;
   // Backwards compat fields if needed:
   date?: string;
@@ -69,6 +70,7 @@ export const bookingService = {
       body.append('customerLatitude', String(payload.customerLatitude));
       body.append('customerLongitude', String(payload.customerLongitude));
       body.append('isUrgent', String(Boolean(payload.isUrgent)));
+      body.append('paymentMethod', payload.paymentMethod);
       if (payload.description) body.append('description', payload.description);
       problemPhotos.forEach((photo) => body.append('problemPhotos', photo));
 
@@ -104,6 +106,15 @@ export const bookingService = {
       return response.data.data as Booking;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Could not verify payment'));
+    }
+  },
+
+  async confirmCashPayment(bookingId: string): Promise<Booking> {
+    try {
+      const response = await api.patch<ApiResponse<Booking>>(`/bookings/${bookingId}/cash-payment`);
+      return response.data.data as Booking;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not confirm cash payment'));
     }
   },
 
