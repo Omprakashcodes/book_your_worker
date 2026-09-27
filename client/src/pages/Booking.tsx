@@ -356,18 +356,23 @@ export const Booking: React.FC = () => {
                 </div>
               </div>
 
-              {/* Additional notes */}
-              <div className="pt-4 border-t border-slate-100">
-                <label htmlFor="problem-photos" className="mb-1.5 flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  <ImagePlus className="h-3.5 w-3.5 text-slate-400" />
-                  <span>Problem photos (Optional, up to 5)</span>
-                </label>
-                <p className="mb-3 text-xs text-slate-500">Show the worker what needs attention. JPG, PNG, WebP or GIF, up to 8 MB each.</p>
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label htmlFor="problem-photos" className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <ImagePlus className="h-4 w-4 text-indigo-600" />
+                    Add photos of the problem
+                  </label>
+                  <span className="text-xs font-medium text-slate-500">{problemPhotos.length}/5</span>
+                </div>
+                <p id="problem-photo-help" className="mt-1 text-xs text-slate-600">
+                  Help your worker understand the issue. JPG, PNG, WebP or GIF, up to 8 MB each.
+                </p>
                 <input
                   id="problem-photos"
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   multiple
+                  aria-describedby="problem-photo-help"
                   onChange={(event) => {
                     const selected = Array.from(event.target.files || []);
                     const remaining = Math.max(0, 5 - problemPhotos.length);
@@ -378,10 +383,17 @@ export const Booking: React.FC = () => {
                     event.target.value = '';
                   }}
                   disabled={problemPhotos.length >= 5}
-                  className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200 disabled:opacity-50"
+                  className="sr-only"
                 />
+                <label
+                  htmlFor="problem-photos"
+                  className={`mt-3 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${problemPhotos.length >= 5 ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400' : 'border-indigo-300 bg-white text-indigo-700 hover:bg-indigo-100'}`}
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  Choose problem photos
+                </label>
                 {problemPhotos.length > 0 && (
-                  <ul className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 px-3">
+                  <ul className="mt-3 divide-y divide-indigo-100 rounded-lg border border-indigo-100 bg-white px-3">
                     {problemPhotos.map((photo, index) => (
                       <li key={`${photo.name}-${photo.lastModified}`} className="flex items-center justify-between gap-3 py-2 text-xs text-slate-700">
                         <span className="min-w-0 truncate">{photo.name}</span>
