@@ -110,17 +110,18 @@ export const Login: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 leading-relaxed">
+            <div role="alert" className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 leading-relaxed">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Email Address
               </label>
               <input
+                id="login-email"
                 type="email"
                 required
                 autoComplete="email"
@@ -133,7 +134,7 @@ export const Login: React.FC = () => {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Password
                 </label>
                 <Link to="/forgot-password" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
@@ -142,6 +143,7 @@ export const Login: React.FC = () => {
               </div>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoComplete="current-password"

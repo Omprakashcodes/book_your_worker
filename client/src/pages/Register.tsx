@@ -146,6 +146,7 @@ export const Register: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-5">
             <button
               type="button"
+              aria-pressed={role === 'customer'}
               onClick={() => setRole('customer')}
               className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 role === 'customer'
@@ -158,6 +159,7 @@ export const Register: React.FC = () => {
             </button>
             <button
               type="button"
+              aria-pressed={role === 'worker'}
               onClick={() => setRole('worker')}
               className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 role === 'worker'
@@ -171,17 +173,18 @@ export const Register: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+            <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label htmlFor="register-name" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                 Full Name
               </label>
               <input
+                id="register-name"
                 type="text"
                 required
                 placeholder="e.g. Ramesh Patel"
@@ -192,10 +195,11 @@ export const Register: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label htmlFor="register-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                 Email Address
               </label>
               <input
+                id="register-email"
                 type="email"
                 required
                 autoComplete="email"
@@ -208,11 +212,12 @@ export const Register: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label htmlFor="register-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Password
                 </label>
                 <div className="relative">
                   <input
+                    id="register-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     autoComplete="new-password"
@@ -225,6 +230,7 @@ export const Register: React.FC = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -232,12 +238,14 @@ export const Register: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label htmlFor="register-confirm-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Confirm Password
                 </label>
                 <input
+                  id="register-confirm-password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   placeholder="Repeat password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -248,10 +256,11 @@ export const Register: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label htmlFor="register-city" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   City / Location
                 </label>
                 <input
+                  id="register-city"
                   type="text"
                   placeholder="e.g. Bangalore"
                   value={city}
@@ -260,12 +269,13 @@ export const Register: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label htmlFor="register-phone" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Mobile Number (with country code)
                 </label>
                 <div className="flex items-center w-full bg-slate-50 border border-slate-200 rounded-xl focus-within:bg-white focus-within:border-indigo-600 transition-colors">
                   <span className="pl-3.5 text-sm font-semibold text-slate-500">+91</span>
                   <input
+                    id="register-phone"
                     type="tel"
                     required
                     inputMode="numeric"
@@ -286,10 +296,11 @@ export const Register: React.FC = () => {
                   Worker Professional Profile
                 </span>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="register-skills" className="block text-xs font-semibold text-slate-700 mb-1">
                     Skills (Comma separated)
                   </label>
                   <input
+                    id="register-skills"
                     type="text"
                     placeholder="e.g. Plumbing, Pipe Fitting, Water Tank"
                     value={skills}
@@ -300,10 +311,11 @@ export const Register: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor="register-experience" className="block text-xs font-semibold text-slate-700 mb-1">
                       Experience (Years)
                     </label>
                     <input
+                      id="register-experience"
                       type="number"
                       min="0"
                       placeholder="e.g. 5"
@@ -313,10 +325,11 @@ export const Register: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor="register-wage" className="block text-xs font-semibold text-slate-700 mb-1">
                       Daily Wage (₹)
                     </label>
                     <input
+                      id="register-wage"
                       type="number"
                       min="100"
                       required

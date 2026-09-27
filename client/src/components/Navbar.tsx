@@ -69,7 +69,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           {/* Center Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1 sm:gap-2">
+          <nav aria-label="Main navigation" className="hidden md:flex items-center gap-1 sm:gap-2">
             {/* Customer & Guest Nav */}
             {!isAdmin && !isWorker && (
               <>
@@ -247,6 +247,7 @@ export const Navbar: React.FC = () => {
                   type="button"
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   className="flex items-center gap-2.5 p-1.5 pl-2 pr-3 rounded-full hover:bg-slate-100 transition-colors border border-slate-200 cursor-pointer"
+                  aria-expanded={userDropdownOpen}
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                     {getInitials(user?.name)}
@@ -388,7 +389,9 @@ export const Navbar: React.FC = () => {
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-700 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors"
-              aria-label="Toggle Menu"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -398,7 +401,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3 shadow-lg">
+        <div id="mobile-navigation" role="navigation" aria-label="Mobile navigation" className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3 shadow-lg">
           {isAuthenticated && (
             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl mb-2">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center font-bold text-sm">

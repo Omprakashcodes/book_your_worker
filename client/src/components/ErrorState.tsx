@@ -15,7 +15,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   isRetrying = false,
 }) => {
   return (
-    <div className="text-center py-10 px-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl max-w-lg mx-auto">
+    <div role="alert" className="text-center py-10 px-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl max-w-lg mx-auto">
       <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3.5">
         <AlertCircle className="w-6 h-6" />
       </div>

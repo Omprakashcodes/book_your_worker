@@ -312,11 +312,12 @@ export const Booking: React.FC = () => {
 
               {/* Service Selection */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label htmlFor="booking-service" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                   Required Service
                 </label>
                 {skillsList.length > 0 ? (
                   <select
+                    id="booking-service"
                     value={service}
                     onChange={(e) => setService(e.target.value)}
                     className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-600 focus:outline-hidden transition-colors cursor-pointer"
@@ -332,6 +333,7 @@ export const Booking: React.FC = () => {
                   </select>
                 ) : (
                   <input
+                    id="booking-service"
                     type="text"
                     required
                     placeholder="e.g. Bathroom pipe leakage fix"
@@ -345,11 +347,12 @@ export const Booking: React.FC = () => {
               {/* Date & Time Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <label htmlFor="booking-date" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>Booking Date</span>
                   </label>
                   <input
+                    id="booking-date"
                     type="date"
                     required
                     value={date}
@@ -360,11 +363,12 @@ export const Booking: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <label htmlFor="booking-time" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>Preferred Time Slot</span>
                   </label>
                   <select
+                    id="booking-time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-600 focus:outline-hidden transition-colors cursor-pointer"
@@ -388,11 +392,12 @@ export const Booking: React.FC = () => {
                 </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <label htmlFor="booking-address" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
                     <span>Complete Street Address</span>
                   </label>
                   <textarea
+                    id="booking-address"
                     required
                     rows={3}
                     value={address}
@@ -477,11 +482,12 @@ export const Booking: React.FC = () => {
 
               {/* Additional notes */}
               <div className="pt-4 border-t border-slate-100">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <label htmlFor="booking-notes" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <FileText className="w-3.5 h-3.5 text-slate-400" />
                   <span>Job Notes / Instructions (Optional)</span>
                 </label>
                 <textarea
+                  id="booking-notes"
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

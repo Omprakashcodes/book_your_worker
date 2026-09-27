@@ -187,7 +187,7 @@ export const MyBookings: React.FC = () => {
                   : `You do not have any orders currently marked as ${activeTab}.`
               }
               actionText="Explore Workers"
-              actionLink="/#workers-section"
+              actionHref="/#workers-section"
             />
           ) : (
             <div className="space-y-4">

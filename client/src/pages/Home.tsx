@@ -135,6 +135,7 @@ export const Home: React.FC = () => {
                 <Search className="w-4 h-4 text-slate-400 shrink-0" />
                 <input
                   type="text"
+                  aria-label="Search workers by name, trade, or location"
                   placeholder="Try 'Plumber', 'Electrician', 'Painting'..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -145,6 +146,7 @@ export const Home: React.FC = () => {
               <div className="sm:w-52 flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 rounded-xl">
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                 <select
+                  aria-label="Filter workers by city"
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.target.value)}
                   className="w-full text-sm text-slate-800 bg-transparent focus:outline-hidden cursor-pointer"
@@ -172,6 +174,7 @@ export const Home: React.FC = () => {
               {['Plumbing', 'Wiring', 'Cleaning', 'Carpentry', 'Painting'].map((k) => (
                 <button
                   key={k}
+                  type="button"
                   onClick={() => setSearchQuery(k)}
                   className="px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 hover:border-indigo-300 hover:text-indigo-600 transition-colors cursor-pointer"
                 >
@@ -209,6 +212,8 @@ export const Home: React.FC = () => {
               return (
                 <button
                   key={cat.id}
+                  type="button"
+                  aria-pressed={isSelected}
                   onClick={() => {
                     setSelectedCategory(cat.id);
                     const el = document.getElementById('workers-section');

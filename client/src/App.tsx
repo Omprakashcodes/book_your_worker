@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
@@ -6,24 +6,24 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { Loader2 } from 'lucide-react';
 
-// Pages
-import { Home } from './pages/Home';
-import { Login } from './pages/Login';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { ResetPassword } from './pages/ResetPassword';
-import { Register } from './pages/Register';
-import { WorkerProfile } from './pages/WorkerProfile';
-import { Booking } from './pages/Booking';
-import { MyBookings } from './pages/MyBookings';
-import { Profile } from './pages/Profile';
-import { WorkerDashboard } from './pages/WorkerDashboard';
-import { WorkerProfileManage } from './pages/WorkerProfileManage';
-import { WorkerBookings } from './pages/WorkerBookings';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { AdminWorkers } from './pages/AdminWorkers';
-import { AdminUsers } from './pages/AdminUsers';
-import { NotFound } from './pages/NotFound';
+const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })));
+const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then((module) => ({ default: module.ForgotPassword })));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then((module) => ({ default: module.ResetPassword })));
+const Register = lazy(() => import('./pages/Register').then((module) => ({ default: module.Register })));
+const WorkerProfile = lazy(() => import('./pages/WorkerProfile').then((module) => ({ default: module.WorkerProfile })));
+const Booking = lazy(() => import('./pages/Booking').then((module) => ({ default: module.Booking })));
+const MyBookings = lazy(() => import('./pages/MyBookings').then((module) => ({ default: module.MyBookings })));
+const Profile = lazy(() => import('./pages/Profile').then((module) => ({ default: module.Profile })));
+const WorkerDashboard = lazy(() => import('./pages/WorkerDashboard').then((module) => ({ default: module.WorkerDashboard })));
+const WorkerProfileManage = lazy(() => import('./pages/WorkerProfileManage').then((module) => ({ default: module.WorkerProfileManage })));
+const WorkerBookings = lazy(() => import('./pages/WorkerBookings').then((module) => ({ default: module.WorkerBookings })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then((module) => ({ default: module.AdminDashboard })));
+const AdminWorkers = lazy(() => import('./pages/AdminWorkers').then((module) => ({ default: module.AdminWorkers })));
+const AdminUsers = lazy(() => import('./pages/AdminUsers').then((module) => ({ default: module.AdminUsers })));
+const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })));
 
 export default function App() {
   return (
@@ -33,7 +33,15 @@ export default function App() {
         <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
           <Navbar />
           <main className="flex-1">
-            <Routes>
+            <Suspense
+              fallback={(
+                <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-live="polite">
+                  <Loader2 className="h-7 w-7 animate-spin text-indigo-600" aria-hidden="true" />
+                  <span className="sr-only">Loading page...</span>
+                </div>
+              )}
+            >
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -130,7 +138,8 @@ export default function App() {
 
               {/* Catch-all 404 */}
               <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </main>
           <Footer />
 
