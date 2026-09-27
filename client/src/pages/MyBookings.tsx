@@ -210,12 +210,12 @@ export const MyBookings: React.FC = () => {
         message={`Are you sure you want to cancel booking #${
           cancellingBooking?._id?.slice(-8) || cancellingBooking?.id?.slice(-8)
         }? This will withdraw your request and notify the assigned professional.`}
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
-        confirmVariant="danger"
+        confirmLabel="Yes, Cancel Booking"
+        cancelLabel="Keep Booking"
+        variant="danger"
         isLoading={isCancelLoading}
         onConfirm={handleCancelConfirm}
-        onCancel={() => setCancellingBooking(null)}
+        onClose={() => setCancellingBooking(null)}
       />
     </div>
   );

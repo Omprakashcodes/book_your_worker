@@ -226,18 +226,18 @@ export const WorkerBookings: React.FC = () => {
               ? `Are you sure you want to decline job #${pendingAction.booking._id?.slice(-8) || pendingAction.booking.id?.slice(-8)}? The customer will receive an alert to choose another professional.`
               : `Confirm that you have completed this service request for the customer.`
           }
-          confirmText={
+          confirmLabel={
             pendingAction.type === 'accept'
               ? 'Accept Job'
               : pendingAction.type === 'reject'
               ? 'Decline Job'
               : 'Mark Complete'
           }
-          cancelText="Cancel"
-          confirmVariant={pendingAction.type === 'reject' ? 'danger' : 'primary'}
+          cancelLabel="Cancel"
+          variant={pendingAction.type === 'reject' ? 'danger' : 'primary'}
           isLoading={isActionLoading}
           onConfirm={handleActionConfirm}
-          onCancel={() => setPendingAction(null)}
+          onClose={() => setPendingAction(null)}
         />
       )}
     </div>

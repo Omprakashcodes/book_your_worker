@@ -874,12 +874,12 @@ export const AdminWorkers: React.FC = () => {
               )
             : 'this worker'
         }. This worker will become verified and bookable on the Servigo marketplace.`}
-        confirmText="Yes, Approve Worker"
-        cancelText="Cancel"
-        confirmVariant="primary"
+        confirmLabel="Yes, Approve Worker"
+        cancelLabel="Cancel"
+        variant="primary"
         isLoading={isApproving}
         onConfirm={handleApproveConfirm}
-        onCancel={() =>
+        onClose={() =>
           setApprovingWorker(null)
         }
       />
