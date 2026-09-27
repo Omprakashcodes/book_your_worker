@@ -61,6 +61,8 @@ export const BookingRow: React.FC<BookingRowProps> = ({
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [problemPhotos, setProblemPhotos] = useState<EvidencePhoto[]>(booking.problemPhotos || []);
+  const [isUploadingProblemPhotos, setIsUploadingProblemPhotos] = useState(false);
   const [solutionPhotos, setSolutionPhotos] = useState<EvidencePhoto[]>(booking.solutionPhotos || []);
   const [isUploadingSolutionPhotos, setIsUploadingSolutionPhotos] = useState(false);
   const locationWatchRef = useRef<number | null>(null);
@@ -220,6 +222,31 @@ export const BookingRow: React.FC<BookingRowProps> = ({
       toast.error(error instanceof Error ? error.message : 'Could not upload solution photos');
     } finally {
       setIsUploadingSolutionPhotos(false);
+    }
+  };
+
+  const handleProblemPhotoSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!selected.length) return;
+    if (selected.some((photo) => photo.size > 8 * 1024 * 1024)) {
+      toast.error('Each photo must be 8 MB or smaller.');
+      return;
+    }
+    const available = Math.max(0, 5 - problemPhotos.length);
+    if (selected.length > available) toast.error('You can attach up to five problem photos.');
+    const files = selected.slice(0, available);
+    if (!files.length) return;
+
+    setIsUploadingProblemPhotos(true);
+    try {
+      const photos = await bookingService.uploadProblemPhotos(bookingId, files);
+      setProblemPhotos(photos);
+      toast.success('Problem photos uploaded.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not upload problem photos');
+    } finally {
+      setIsUploadingProblemPhotos(false);
     }
   };
 
@@ -491,41 +518,6 @@ export const BookingRow: React.FC<BookingRowProps> = ({
                 </button>
               )}
 
-              {!isWorkerDashboard && normalizedStatus === 'accepted' && !isArrivalVerified && (
-                <button
-                  type="button"
-                  onClick={handleCreateArrivalCode}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>{arrivalCode ? 'Refresh arrival code' : 'Get arrival code'}</span>
-                </button>
-              )}
-
-              {isWorkerDashboard && normalizedStatus === 'accepted' && !isArrivalVerified && (
-                <input
-                  aria-label="Customer arrival code"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={arrivalCodeInput}
-                  onChange={(event) => setArrivalCodeInput(event.target.value.replace(/\D/g, ''))}
-                  onClick={() => setIsExpanded(true)}
-                  placeholder="Arrival code"
-                  className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
-                />
-              )}
-
-              {isWorkerDashboard && normalizedStatus === 'accepted' && !isArrivalVerified && (
-                <button
-                  type="button"
-                  onClick={handleVerifyArrivalCode}
-                  disabled={arrivalCodeInput.length !== 6}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg disabled:opacity-50"
-                >
-                  Verify arrival
-                </button>
-              )}
-
               {!isWorkerDashboard && normalizedStatus === 'accepted' && (
                 <button
                   type="button"
@@ -573,12 +565,86 @@ export const BookingRow: React.FC<BookingRowProps> = ({
                 <p className="text-rose-600">{locationError}</p>
               )}
 
-              {booking.problemPhotos?.length ? (
-                <BookingEvidenceGallery bookingId={bookingId} kind="problem" photos={booking.problemPhotos} />
+              {problemPhotos.length > 0 ? (
+                <BookingEvidenceGallery bookingId={bookingId} kind="problem" photos={problemPhotos} />
               ) : null}
+
+              {!isWorkerDashboard && ['pending', 'accepted'].includes(normalizedStatus) && problemPhotos.length < 5 && (
+                <div className="md:col-span-2 rounded-lg border border-dashed border-slate-300 bg-white p-3">
+                  <label htmlFor={`problem-photos-${bookingId}`} className="mb-1 block text-xs font-semibold text-slate-800">
+                    Add problem photos {problemPhotos.length === 0 ? '(optional)' : `(${problemPhotos.length}/5)`}
+                  </label>
+                  <p className="mb-2 text-[11px] text-slate-500">Show the issue to your worker. JPG, PNG, WebP or GIF, up to 8 MB each.</p>
+                  <input
+                    id={`problem-photos-${bookingId}`}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    multiple
+                    onChange={handleProblemPhotoSelection}
+                    disabled={isUploadingProblemPhotos}
+                    className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200 disabled:opacity-50"
+                  />
+                  {isUploadingProblemPhotos && <p className="mt-2 text-xs text-indigo-700">Uploading photos...</p>}
+                </div>
+              )}
 
               {solutionPhotos.length > 0 && (
                 <BookingEvidenceGallery bookingId={bookingId} kind="solution" photos={solutionPhotos} />
+              )}
+
+              {normalizedStatus === 'accepted' && (
+                <section className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3" aria-label="Arrival verification">
+                  {isArrivalVerified ? (
+                    <p className="text-xs font-semibold text-emerald-900">Arrival verified. {isWorkerDashboard ? 'You can upload solution photos below.' : 'Your worker has confirmed arrival.'}</p>
+                  ) : isWorkerDashboard ? (
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-900">Verify customer arrival</p>
+                      <p className="mt-1 text-[11px] text-emerald-800">Ask the customer for their 6-digit arrival code before starting the work.</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <input
+                          aria-label="Customer arrival code"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={arrivalCodeInput}
+                          onChange={(event) => setArrivalCodeInput(event.target.value.replace(/\D/g, ''))}
+                          placeholder="6-digit code"
+                          className="w-32 rounded-lg border border-emerald-300 bg-white px-2.5 py-2 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyArrivalCode}
+                          disabled={arrivalCodeInput.length !== 6}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Verify arrival
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-emerald-900">Arrival verification</p>
+                        <p className="mt-1 text-[11px] text-emerald-800">Generate a one-time code and share it with your worker when they arrive.</p>
+                        {arrivalCode && <p className="mt-2 font-mono text-xl font-bold tracking-widest text-emerald-950">{arrivalCode}</p>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCreateArrivalCode}
+                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        {arrivalCode ? 'Refresh code' : 'Get arrival code'}
+                      </button>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {isWorkerDashboard && normalizedStatus === 'accepted' && !isArrivalVerified && (
+                <p className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  Verify the customer arrival code above to unlock solution photo uploads and booking completion.
+                </p>
               )}
 
               {isWorkerDashboard && normalizedStatus === 'accepted' && isArrivalVerified && solutionPhotos.length < 5 && (
@@ -598,20 +664,6 @@ export const BookingRow: React.FC<BookingRowProps> = ({
                   />
                   {isUploadingSolutionPhotos && <p className="mt-2 text-xs text-indigo-700">Uploading photos...</p>}
                 </div>
-              )}
-
-              {!isWorkerDashboard && arrivalCode && normalizedStatus === 'accepted' && (
-                <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                  <p className="text-xs font-semibold text-emerald-900">Arrival code</p>
-                  <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-emerald-950">{arrivalCode}</p>
-                  <p className="mt-1 text-[11px] text-emerald-800">Share this code with your worker in person. It expires in four hours.</p>
-                </div>
-              )}
-
-              {isWorkerDashboard && normalizedStatus === 'accepted' && (
-                <p className="md:col-span-2 text-slate-600">
-                  Arrival check: {isArrivalVerified ? 'Customer verified' : 'Ask the customer for their 6-digit arrival code.'}
-                </p>
               )}
 
               {!isWorkerDashboard && normalizedStatus === 'completed' && (

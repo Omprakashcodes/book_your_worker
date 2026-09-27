@@ -160,6 +160,21 @@ export const bookingService = {
     }
   },
 
+  async uploadProblemPhotos(bookingId: string, photos: File[]): Promise<EvidencePhoto[]> {
+    try {
+      const body = new FormData();
+      photos.forEach((photo) => body.append('problemPhotos', photo));
+      const response = await api.post<ApiResponse<EvidencePhoto[]>>(
+        `/bookings/${bookingId}/problem-photos`,
+        body,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      return response.data.data || [];
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not upload problem photos'));
+    }
+  },
+
   async getEvidenceObjectUrl(bookingId: string, kind: 'problem' | 'solution', filename: string): Promise<string> {
     try {
       const response = await api.get<Blob>(

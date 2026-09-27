@@ -197,6 +197,22 @@ const addSolutionPhotos = async (req, res) => {
     }
 };
 
+const addProblemPhotos = async (req, res) => {
+    try {
+        if (!req.files?.length) {
+            return res.status(400).json({ success: false, message: "Choose at least one problem photo" });
+        }
+        const photos = await bookingService.addProblemPhotos(
+            req.user.userId,
+            req.params.id,
+            req.files
+        );
+        return res.status(200).json({ success: true, data: photos });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
 const getEvidenceFile = async (req, res) => {
     try {
         const evidence = await bookingService.getEvidenceFile(
@@ -226,5 +242,6 @@ module.exports = {
     issueArrivalCode,
     verifyArrivalCode,
     addSolutionPhotos,
+    addProblemPhotos,
     getEvidenceFile,
 };

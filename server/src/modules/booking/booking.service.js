@@ -426,6 +426,30 @@ const addSolutionPhotos = async (workerUserId, bookingId, photoFiles) => {
     return booking.solutionPhotos;
 };
 
+const addProblemPhotos = async (customerId, bookingId, photoFiles) => {
+    const booking = await Booking.findOne({ _id: bookingId, customerId });
+
+    if (!booking) {
+        throw new Error("Booking not found");
+    }
+    if (!["pending", "accepted"].includes(booking.status)) {
+        throw new Error("Problem photos can only be added to active bookings");
+    }
+    if (booking.problemPhotos.length + photoFiles.length > 5) {
+        throw new Error("A maximum of five problem photos is allowed per booking");
+    }
+
+    const storedPhotos = await uploadEvidenceFiles(photoFiles);
+    booking.problemPhotos.push(...storedPhotos);
+    try {
+        await booking.save();
+    } catch (error) {
+        await deleteEvidenceFiles(storedPhotos);
+        throw error;
+    }
+    return booking.problemPhotos;
+};
+
 const getEvidenceFile = async (userId, bookingId, kind, filename) => {
     if (!["problem", "solution"].includes(kind) || !/^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i.test(filename)) {
         throw new Error("Evidence file not found");
@@ -468,5 +492,6 @@ module.exports = {
     issueArrivalCode,
     verifyArrivalCode,
     addSolutionPhotos,
+    addProblemPhotos,
     getEvidenceFile,
 };
