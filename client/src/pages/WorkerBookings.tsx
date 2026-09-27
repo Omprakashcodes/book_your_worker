@@ -84,10 +84,18 @@ export const WorkerBookings: React.FC = () => {
   };
 
   const filteredBookings = useMemo(() => {
-    if (activeTab === 'all') return bookings;
-    return bookings.filter(
-      (b) => (b.status || '').toLowerCase() === activeTab.toLowerCase()
-    );
+    const matchingBookings = activeTab === 'all'
+      ? bookings
+      : bookings.filter((b) => (b.status || '').toLowerCase() === activeTab.toLowerCase());
+
+    return matchingBookings
+      .map((booking, index) => ({ booking, index }))
+      .sort((first, second) => {
+        const firstPriority = first.booking.isUrgent && (first.booking.status || '').toLowerCase() === 'pending';
+        const secondPriority = second.booking.isUrgent && (second.booking.status || '').toLowerCase() === 'pending';
+        return Number(secondPriority) - Number(firstPriority) || first.index - second.index;
+      })
+      .map(({ booking }) => booking);
   }, [bookings, activeTab]);
 
   const counts = useMemo(() => {

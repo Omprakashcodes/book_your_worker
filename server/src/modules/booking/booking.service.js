@@ -10,6 +10,7 @@ const {
 } = require("../../middleware/evidence-upload.middleware");
 
 const MAX_BOOKING_DISTANCE_KM = 50;
+const URGENT_BOOKING_SURCHARGE_RATE = 0.2;
 
 const getDistanceInKm = (first, second) => {
     const toRadians = (degrees) => degrees * Math.PI / 180;
@@ -43,7 +44,9 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
         description,
         customerLatitude,
         customerLongitude,
+        isUrgent: urgentValue,
     } = bookingData;
+    const isUrgent = urgentValue === true || urgentValue === "true";
 
     const worker = await Worker.findById(workerId);
 
@@ -81,11 +84,14 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
         throw new Error("Required booking fields are missing");
     }
 
-    const amount = Number(worker.dailyWage);
+    const baseAmount = Number(worker.dailyWage);
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!Number.isFinite(baseAmount) || baseAmount <= 0) {
         throw new Error("Worker pricing is not configured");
     }
+
+    const urgencyFee = isUrgent ? Math.round(baseAmount * URGENT_BOOKING_SURCHARGE_RATE) : 0;
+    const amount = baseAmount + urgencyFee;
 
     const storedProblemPhotos = await uploadEvidenceFiles(problemPhotos);
     let booking;
@@ -99,6 +105,9 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
             address,
             description,
             problemPhotos: storedProblemPhotos,
+            baseAmount,
+            urgencyFee,
+            isUrgent,
             amount,
             status: "pending",
         });
@@ -110,9 +119,10 @@ const createBooking = async (customerId, bookingData, problemPhotos = []) => {
     // Notify worker about the new booking
     await notificationService.createNotification({
         userId: worker.userId,
-        title: "New Booking Request! 🔔",
-        message:
-            `A customer has requested your ${service} service. Review the booking and respond now.`,
+        title: isUrgent ? "Urgent Booking Request! ⚡" : "New Booking Request! 🔔",
+        message: isUrgent
+            ? `A customer marked their ${service} booking urgent. Please prioritize this request.`
+            : `A customer has requested your ${service} service. Review the booking and respond now.`,
         type: "booking_created",
         relatedId: booking._id,
     });

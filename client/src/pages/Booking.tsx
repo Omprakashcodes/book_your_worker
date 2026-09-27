@@ -70,6 +70,7 @@ export const Booking: React.FC = () => {
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
   const [problemPhotos, setProblemPhotos] = useState<File[]>([]);
+  const [isUrgent, setIsUrgent] = useState(false);
   const [customerLocation, setCustomerLocation] = useState<ServiceLocation | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -174,9 +175,10 @@ export const Booking: React.FC = () => {
         time,
         address: address.trim(),
         description: description.trim() || undefined,
-        amount: Number(worker.dailyWage) || 750,
+        amount: estimatedTotal,
         customerLatitude: customerLocation.latitude,
         customerLongitude: customerLocation.longitude,
+        isUrgent,
       }, problemPhotos);
 
       const bookingId = booking._id || booking.id;
@@ -255,6 +257,8 @@ export const Booking: React.FC = () => {
   const isApproved = worker.verificationStatus === 'approved';
   const imageUrl = getImageUrl(worker.profileImage);
   const workerDailyWage = Number(worker.dailyWage) || 750;
+  const urgencyFee = isUrgent ? Math.round(workerDailyWage * 0.2) : 0;
+  const estimatedTotal = workerDailyWage + urgencyFee;
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-8 sm:py-12">
@@ -532,6 +536,22 @@ export const Booking: React.FC = () => {
                   </div>
                 </div>
 
+                <label className={`mb-4 flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${isUrgent ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                  <input
+                    type="checkbox"
+                    checked={isUrgent}
+                    onChange={(event) => setIsUrgent(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-amber-600"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-900">Mark as urgent</span>
+                      <span className="text-xs font-semibold text-amber-800">+{formatCurrency(Math.round(workerDailyWage * 0.2))}</span>
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-600">Adds a 20% priority fee. Your request will be highlighted for the worker.</span>
+                  </span>
+                </label>
+
                 {/* Price Breakdown */}
                 <div className="space-y-3 text-sm border-t border-slate-100 pt-4">
                   <div className="flex justify-between text-slate-600">
@@ -540,6 +560,13 @@ export const Booking: React.FC = () => {
                       {formatCurrency(workerDailyWage)}
                     </span>
                   </div>
+
+                  {isUrgent && (
+                    <div className="flex justify-between text-amber-800">
+                      <span>Urgent priority fee (20%)</span>
+                      <span className="font-semibold">{formatCurrency(urgencyFee)}</span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between text-slate-600">
                     <span>Platform Booking Fee</span>
@@ -557,7 +584,7 @@ export const Booking: React.FC = () => {
                     </span>
                     <div className="text-right">
                       <span className="text-2xl font-extrabold text-slate-900 font-heading">
-                        {formatCurrency(workerDailyWage)}
+                        {formatCurrency(estimatedTotal)}
                       </span>
                       <span className="block text-[11px] text-slate-400">
                         Pay directly upon job satisfaction

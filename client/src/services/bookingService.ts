@@ -10,6 +10,7 @@ export interface CreateBookingPayload {
   amount: number;
   customerLatitude: number;
   customerLongitude: number;
+  isUrgent?: boolean;
   description?: string;
   // Backwards compat fields if needed:
   date?: string;
@@ -67,6 +68,7 @@ export const bookingService = {
       body.append('amount', String(payload.amount));
       body.append('customerLatitude', String(payload.customerLatitude));
       body.append('customerLongitude', String(payload.customerLongitude));
+      body.append('isUrgent', String(Boolean(payload.isUrgent)));
       if (payload.description) body.append('description', payload.description);
       problemPhotos.forEach((photo) => body.append('problemPhotos', photo));
 

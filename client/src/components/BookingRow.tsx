@@ -23,6 +23,7 @@ import {
   User,
   Navigation,
   Star,
+  Zap,
 } from 'lucide-react';
 import { bookingService, BookingReview, LiveLocation } from '../services/bookingService';
 import { BookingEvidenceGallery } from './BookingEvidenceGallery';
@@ -311,6 +312,11 @@ export const BookingRow: React.FC<BookingRowProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {booking.isUrgent && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-bold uppercase text-amber-800">
+              <Zap className="h-3 w-3 fill-current" /> Urgent
+            </span>
+          )}
           <StatusBadge status={booking.status} size="sm" />
         </div>
       </div>
@@ -440,6 +446,11 @@ export const BookingRow: React.FC<BookingRowProps> = ({
               <span className="text-lg sm:text-xl font-bold text-slate-900 font-heading">
                 {formatCurrency(booking.amount)}
               </span>
+              {booking.isUrgent && booking.urgencyFee ? (
+                <span className="mt-0.5 block text-[10px] font-medium text-amber-700">
+                  Includes {formatCurrency(booking.urgencyFee)} urgent fee
+                </span>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-2">

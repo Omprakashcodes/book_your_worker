@@ -69,6 +69,23 @@ const bookingSchema = new mongoose.Schema(
             min: 0,
         },
 
+        baseAmount: {
+            type: Number,
+            min: 0,
+            default: null,
+        },
+
+        urgencyFee: {
+            type: Number,
+            min: 0,
+            default: 0,
+        },
+
+        isUrgent: {
+            type: Boolean,
+            default: false,
+        },
+
         paymentStatus: {
             type: String,
             enum: ["pending", "created", "paid", "failed", "refunded"],

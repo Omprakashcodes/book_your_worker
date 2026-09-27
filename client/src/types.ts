@@ -87,6 +87,9 @@ export interface Booking {
   address: string;
   description?: string;
   amount: number;
+  baseAmount?: number | null;
+  urgencyFee?: number;
+  isUrgent?: boolean;
   paymentStatus?: 'pending' | 'created' | 'paid' | 'failed' | 'refunded';
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
