@@ -16,6 +16,15 @@ export interface User {
 
 export type VerificationStatus = 'pending' | 'approved' | 'rejected';
 
+export interface WorkerReview {
+  _id: string;
+  rating: number;
+  comment: string;
+  createdAt?: string;
+  customerId?: { name?: string } | null;
+  bookingId?: { service?: string } | null;
+}
+
 export interface WorkerProfile {
   _id: string;
   id?: string;
@@ -35,6 +44,9 @@ export interface WorkerProfile {
   verificationStatus: VerificationStatus;
   rejectionReason?: string;
   verifiedAt?: string;
+  averageRating?: number;
+  reviewCount?: number;
+  reviews?: WorkerReview[];
   createdAt?: string;
   updatedAt?: string;
 }

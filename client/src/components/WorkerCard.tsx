@@ -8,7 +8,7 @@ import {
   getWorkerDisplayName,
   getImageUrl,
 } from '../utils/formatters';
-import { ShieldCheck, MapPin, Briefcase, ArrowRight } from 'lucide-react';
+import { ShieldCheck, MapPin, Briefcase, ArrowRight, Star } from 'lucide-react';
 
 interface WorkerCardProps {
   worker: WorkerProfile;
@@ -84,6 +84,11 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker }) => {
                   <span>{worker.experience} yrs exp</span>
                 </span>
               )}
+              <span className="inline-flex items-center gap-1 text-amber-700" aria-label={`${(worker.averageRating || 0).toFixed(1)} out of 5 from ${worker.reviewCount || 0} reviews`}>
+                <Star className="w-3.5 h-3.5 fill-current" />
+                <span className="font-semibold">{(worker.averageRating || 0).toFixed(1)}</span>
+                <span className="text-slate-400">({worker.reviewCount || 0})</span>
+              </span>
             </div>
           </div>
         </div>

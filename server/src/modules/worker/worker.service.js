@@ -1,6 +1,27 @@
 const Worker = require("./worker.model");
 const Auth = require("../auth/auth.model");
+const Review = require("../review/review.model");
 const notificationService = require("../notification/notification.service");
+
+const getRatingSummaries = async (workerIds) => {
+    const summaries = await Review.aggregate([
+        { $match: { workerId: { $in: workerIds } } },
+        {
+            $group: {
+                _id: "$workerId",
+                averageRating: { $avg: "$rating" },
+                reviewCount: { $sum: 1 },
+            },
+        },
+    ]);
+
+    return new Map(summaries.map((summary) => [String(summary._id), summary]));
+};
+
+const toPublicWorker = (worker) => {
+    const { aadhaarDocument, panDocument, ...publicWorker } = worker;
+    return publicWorker;
+};
 
 const createOrUpdateWorkerProfile = async (userId, workerData) => {
     const authUser = await Auth.findById(userId);
@@ -114,9 +135,60 @@ const getApprovedWorkers = async () => {
         verificationStatus: "approved",
     })
         .populate("userId", "name email role")
-        .sort({ createdAt: -1 });
+        .lean();
 
-    return workers;
+    const ratingSummaries = await getRatingSummaries(workers.map((worker) => worker._id));
+
+    return workers
+        .map((worker) => {
+            const summary = ratingSummaries.get(String(worker._id));
+            return {
+                ...toPublicWorker(worker),
+                averageRating: summary?.averageRating || 0,
+                reviewCount: summary?.reviewCount || 0,
+            };
+        })
+        .sort((first, second) =>
+            second.averageRating - first.averageRating ||
+            second.reviewCount - first.reviewCount ||
+            new Date(second.createdAt) - new Date(first.createdAt)
+        )
+        .map((worker) => ({
+            ...worker,
+            averageRating: Number(worker.averageRating.toFixed(1)),
+        }));
+};
+
+const getApprovedWorkerById = async (workerId) => {
+    const worker = await Worker.findOne({
+        _id: workerId,
+        verificationStatus: "approved",
+    })
+        .populate("userId", "name email role")
+        .lean();
+
+    if (!worker) {
+        return null;
+    }
+
+    const [ratingSummary, reviews] = await Promise.all([
+        getRatingSummaries([worker._id]),
+        Review.find({ workerId: worker._id })
+            .select("rating comment createdAt customerId bookingId")
+            .populate("customerId", "name")
+            .populate("bookingId", "service")
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .lean(),
+    ]);
+    const summary = ratingSummary.get(String(worker._id));
+
+    return {
+        ...toPublicWorker(worker),
+        averageRating: summary ? Number(summary.averageRating.toFixed(1)) : 0,
+        reviewCount: summary?.reviewCount || 0,
+        reviews,
+    };
 };
 
 module.exports = {
@@ -124,4 +196,5 @@ module.exports = {
     getMyWorkerProfile,
     uploadWorkerDocuments,
     getApprovedWorkers,
+    getApprovedWorkerById,
 };

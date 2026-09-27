@@ -22,6 +22,7 @@ import {
   Mail,
   Zap,
   ExternalLink,
+  Star,
 } from 'lucide-react';
 
 export const WorkerProfile: React.FC = () => {
@@ -161,6 +162,11 @@ export const WorkerProfile: React.FC = () => {
                         <span>{worker.experience} years practical experience</span>
                       </span>
                     )}
+                    <span className="inline-flex items-center gap-1 font-semibold text-amber-700" aria-label={`${(worker.averageRating || 0).toFixed(1)} out of 5 from ${worker.reviewCount || 0} reviews`}>
+                      <Star className="w-4 h-4 fill-current" />
+                      <span>{(worker.averageRating || 0).toFixed(1)}</span>
+                      <span className="font-normal text-slate-500">({worker.reviewCount || 0} reviews)</span>
+                    </span>
                   </div>
 
                   {/* Contact Info Preview if provided */}
@@ -199,6 +205,48 @@ export const WorkerProfile: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Public customer feedback */}
+            <section className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8" aria-labelledby="worker-reviews-heading">
+              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <h2 id="worker-reviews-heading" className="text-lg font-bold text-slate-900 font-heading">
+                    Customer feedback
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500">Reviews from customers who completed a booking.</p>
+                </div>
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-amber-700">
+                  <Star className="h-4 w-4 fill-current" />
+                  {(worker.averageRating || 0).toFixed(1)} / 5
+                  <span className="font-normal text-slate-500">({worker.reviewCount || 0})</span>
+                </span>
+              </div>
+              {worker.reviews?.length ? (
+                <div className="divide-y divide-slate-100">
+                  {worker.reviews.map((review) => (
+                    <article key={review._id} className="py-4 last:pb-0">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{review.customerId?.name || 'Customer'}</p>
+                          {review.bookingId?.service && (
+                            <p className="mt-0.5 text-xs text-slate-500">{review.bookingId.service}</p>
+                          )}
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
+                          <Star className="h-3.5 w-3.5 fill-current" /> {review.rating}/5
+                        </span>
+                      </div>
+                      {review.comment && <p className="mt-2 text-sm leading-relaxed text-slate-600">{review.comment}</p>}
+                      {review.createdAt && (
+                        <p className="mt-2 text-[11px] text-slate-400">{new Date(review.createdAt).toLocaleDateString()}</p>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-5 text-sm text-slate-500">No customer feedback yet.</p>
+              )}
+            </section>
 
             {/* Service & Operational Coverage */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8">

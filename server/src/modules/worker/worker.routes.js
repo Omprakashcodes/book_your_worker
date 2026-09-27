@@ -5,6 +5,7 @@ const {
     getMyWorkerProfile,
     uploadWorkerDocuments,
      getApprovedWorkers,
+    getApprovedWorkerById,
 } = require("./worker.controller");
 
 const authMiddleware = require("../../middleware/auth.middleware");
@@ -49,6 +50,11 @@ router.post(
 router.get(
     "/",
     getApprovedWorkers
+);
+
+router.get(
+    "/:workerId",
+    getApprovedWorkerById
 );
 
 module.exports = router;

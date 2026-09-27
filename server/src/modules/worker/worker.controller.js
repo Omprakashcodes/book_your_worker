@@ -105,9 +105,33 @@ const getApprovedWorkers = async (req, res) => {
     }
 };
 
+const getApprovedWorkerById = async (req, res) => {
+    try {
+        const worker = await workerService.getApprovedWorkerById(req.params.workerId);
+        if (!worker) {
+            return res.status(404).json({
+                success: false,
+                message: "Worker profile not found or worker is not currently approved",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Worker profile fetched successfully",
+            data: worker,
+        });
+    } catch (error) {
+        return res.status(404).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 module.exports = {
     createOrUpdateWorkerProfile,
     getMyWorkerProfile,
     uploadWorkerDocuments,
     getApprovedWorkers,
+    getApprovedWorkerById,
 };

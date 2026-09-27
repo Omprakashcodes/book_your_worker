@@ -35,17 +35,15 @@ export const workerService = {
     }
   },
 
-  /**
-   * Resolves worker from approved workers list
-   * (Since backend does not provide a public /api/workers/:id endpoint)
-   */
+  /** Fetches an approved worker profile and its public feedback. */
   async getWorkerById(id: string): Promise<WorkerProfile> {
-    const workers = await this.getWorkers();
-    const found = workers.find((w) => (w._id || w.id) === id);
-    if (!found) {
-      throw new Error('Worker profile not found or worker is not currently approved');
+    try {
+      const response = await api.get<ApiResponse<WorkerProfile> | WorkerProfile>(`/workers/${id}`);
+      const data = response.data;
+      return (data as any)?.data || (data as any)?.worker || data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not load worker profile'));
     }
-    return found;
   },
 
   /**
