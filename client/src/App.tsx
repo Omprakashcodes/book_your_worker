@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { HelpChatbot } from './components/HelpChatbot';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
@@ -142,6 +143,7 @@ export default function App() {
             </Suspense>
           </main>
           <Footer />
+          <HelpChatbot />
 
           {/* Toast Notification Container */}
           <Toaster

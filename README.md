@@ -17,6 +17,7 @@ Finding a reliable worker for household or local services can be difficult and t
 - ⭐ Review and rating system
 - 🔔 Notification system
 - 💳 Payment integration
+- 💬 In-portal help chatbot with offline English, Hindi, and Hinglish detection, localized answers, workflow FAQs, and a no-guess fallback for undocumented policies
 - 🛡️ Secure backend APIs
 - ✅ Input validation and error handling
 
